@@ -1,9 +1,13 @@
+require('dotenv').config();
+
 const express = require('express');
 const path = require('node:path');
 
 const db = require('./database/db');
+
 const servicesRouter = require('./routes/services');
 const subscriptionsRouter = require('./routes/subscriptions');
+const tmdbRouter = require('./routes/tmdb');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,6 +17,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/services', servicesRouter);
 app.use('/api/subscriptions', subscriptionsRouter);
+app.use('/api/tmdb', tmdbRouter);
 
 app.get('/api/health', (req, res) => {
   try {
