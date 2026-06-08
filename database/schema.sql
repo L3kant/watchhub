@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS streaming_services (
     service_name TEXT NOT NULL UNIQUE,
     provider_key TEXT,
     active_flag INTEGER NOT NULL DEFAULT 1 CHECK (active_flag IN (0, 1)),
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) STRICT;
 
 CREATE TABLE IF NOT EXISTS media_titles (
