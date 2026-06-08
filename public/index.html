@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>WatchHub</title>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>WatchHub</h1>
+      <p>Soukromý katalog streamovacích služeb</p>
+    </div>
+  </header>
+
+  <main class="app-layout">
+    <aside class="sidebar">
+      <h2>Moje služby</h2>
+
+      <ul class="service-list">
+        <li>Netflix</li>
+        <li>Disney+</li>
+        <li>Max</li>
+        <li>SkyShowtime</li>
+      </ul>
+    </aside>
+
+    <section class="content">
+      <section class="filters">
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="Hledat podle názvu..."
+        />
+
+        <select id="serviceFilter">
+          <option value="">Všechny služby</option>
+          <option value="Netflix">Netflix</option>
+          <option value="Disney+">Disney+</option>
+          <option value="Max">Max</option>
+          <option value="SkyShowtime">SkyShowtime</option>
+        </select>
+
+        <select id="typeFilter">
+          <option value="">Filmy i seriály</option>
+          <option value="movie">Filmy</option>
+          <option value="series">Seriály</option>
+        </select>
+      </section>
+
+      <section>
+        <h2>Katalog</h2>
+        <div id="catalog" class="catalog"></div>
+      </section>
+    </section>
+
+    <aside class="detail-panel">
+      <h2>Detail titulu</h2>
+
+      <div id="titleDetail" class="title-detail empty">
+        Vyber titul z katalogu.
+      </div>
+    </aside>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  color: #f5f5f5;
+  background: #111;
+}
+
+.app-header {
+  padding: 24px;
+  background: #181818;
+  border-bottom: 1px solid #333;
+}
+
+.app-header h1 {
+  margin: 0 0 4px;
+}
+
+.app-header p {
+  margin: 0;
+  color: #aaa;
+}
+
+.app-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr 320px;
+  gap: 24px;
+  padding: 24px;
+}
+
+.sidebar,
+.content,
+.detail-panel {
+  background: #181818;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.service-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.service-list li {
+  padding: 10px 0;
+  border-bottom: 1px solid #333;
+}
+
+.filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.filters input,
+.filters select {
+  padding: 10px;
+  border: 1px solid #444;
+  border-radius: 8px;
+  color: #f5f5f5;
+  background: #222;
+}
+
+.filters input {
+  flex: 1;
+}
+
+.catalog {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.title-card {
+  padding: 16px;
+  border: 1px solid #333;
+  border-radius: 10px;
+  background: #222;
+  cursor: pointer;
+}
+
+.title-card:hover {
+  border-color: #777;
+}
+
+.title-card h3 {
+  margin: 0 0 8px;
+}
+
+.title-card p {
+  margin: 4px 0;
+  color: #bbb;
+}
+
+.badge {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: #333;
+}
+
+.title-detail.empty {
+  color: #aaa;
+}
+
+.title-detail h3 {
+  margin-top: 0;
+}
+
+.detail-meta {
+  color: #bbb;
+}
+
+.detail-actions {
+  margin-top: 16px;
+}
+
+.detail-actions a {
+  display: inline-block;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #fff;
+  background: #333;
+  text-decoration: none;
+}
+
+.detail-actions a:hover {
+  background: #444;
+}
