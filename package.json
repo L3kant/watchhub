@@ -4,7 +4,9 @@
   "description": "Private catalog of streaming subscriptions and available titles.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "db:init": "node scripts/init-db.js",
+    "db:check": "node scripts/check-db.js"
   },
   "keywords": [],
   "author": "L3kant",

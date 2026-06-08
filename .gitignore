@@ -10,3 +10,9 @@ data/*.db-*
 Thumbs.db
 
 .vscode/
+
+# Local SQLite database
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
