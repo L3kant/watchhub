@@ -8,5 +8,8 @@
   },
   "keywords": [],
   "author": "L3kant",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
 }
