@@ -7,7 +7,8 @@
     "start": "node server.js",
     "db:init": "node scripts/init-db.js",
     "db:check": "node scripts/check-db.js",
-    "db:migrate": "node scripts/migrate-db.js"
+    "db:migrate": "node scripts/migrate-db.js",
+    "tmdb:sync-providers": "node scripts/sync-providers.js"
   },
   "keywords": [],
   "author": "L3kant",
