@@ -3,6 +3,7 @@ const detailElement = document.querySelector('#titleDetail');
 const searchInput = document.querySelector('#searchInput');
 const serviceFilter = document.querySelector('#serviceFilter');
 const typeFilter = document.querySelector('#typeFilter');
+const genreFilter = document.querySelector('#genreFilter');
 const catalogStatus = document.querySelector('#catalogStatus');
 
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w342';
@@ -166,6 +167,7 @@ function buildCatalogUrl() {
   const searchValue = searchInput.value.trim();
   const selectedService = serviceFilter.value;
   const selectedType = typeFilter.value;
+  const selectedGenre = genreFilter.value;
 
   if (searchValue !== '') {
     params.set('search', searchValue);
@@ -179,7 +181,33 @@ function buildCatalogUrl() {
     params.set('type', selectedType);
   }
 
+  if (selectedGenre !== '') {
+    params.set('genre', selectedGenre);
+  }
+
   return `/api/catalog?${params.toString()}`;
+}
+
+async function loadGenres() {
+  try {
+    const response = await fetch('/api/catalog/genres');
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    for (const genre of result.data) {
+      const option = document.createElement('option');
+      option.value = genre;
+      option.textContent = genre;
+
+      genreFilter.appendChild(option);
+    }
+  } catch (error) {
+    console.error('Failed to load genres:', error);
+  }
 }
 
 async function loadCatalog() {
@@ -207,5 +235,7 @@ async function loadCatalog() {
 searchInput.addEventListener('input', loadCatalog);
 serviceFilter.addEventListener('change', loadCatalog);
 typeFilter.addEventListener('change', loadCatalog);
+genreFilter.addEventListener('change', loadCatalog);
 
 loadCatalog();
+loadGenres();

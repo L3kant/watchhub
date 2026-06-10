@@ -53,6 +53,14 @@ function parseMediaType(value) {
   return mediaType;
 }
 
+function parseGenre(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  return value.trim();
+}
+
 function buildCatalogWhereClause(filters) {
   const conditions = [];
   const params = [];
@@ -90,6 +98,21 @@ function buildCatalogWhereClause(filters) {
     params.push(filters.service);
   }
 
+  if (filters.genre !== '') {
+    conditions.push(`
+      EXISTS (
+        SELECT 1
+        FROM title_genres tg_filter
+        JOIN media_genres mg_filter
+          ON mg_filter.genre_id = tg_filter.genre_id
+        WHERE tg_filter.title_id = mt.title_id
+          AND mg_filter.genre_name = ?
+      )
+    `);
+
+    params.push(filters.genre);
+  }
+
   if (conditions.length === 0) {
     return {
       whereSql: '',
@@ -103,12 +126,38 @@ function buildCatalogWhereClause(filters) {
   };
 }
 
+router.get('/genres', (req, res) => {
+  try {
+    const genres = db
+      .prepare(`
+        SELECT DISTINCT
+          genre_name
+        FROM media_genres
+        WHERE genre_name IS NOT NULL
+          AND genre_name != ''
+        ORDER BY genre_name ASC
+      `)
+      .all();
+
+    res.json({
+      data: genres.map((genre) => genre.genre_name),
+    });
+  } catch (error) {
+    console.error('Failed to load catalog genres:', error);
+
+    res.status(500).json({
+      error: 'Failed to load catalog genres',
+    });
+  }
+});
+
 router.get('/', (req, res) => {
   try {
     const filters = {
       search: parseSearch(req.query.search),
       service: parseService(req.query.service),
       mediaType: parseMediaType(req.query.type),
+      genre: parseGenre(req.query.genre),
     };
 
     const limit = parseLimit(req.query.limit);
