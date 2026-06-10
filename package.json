@@ -8,9 +8,10 @@
     "db:init": "node scripts/init-db.js",
     "db:check": "node scripts/check-db.js",
     "db:migrate": "node scripts/migrate-db.js",
+    "catalog:summary": "node scripts/catalog-summary.js",
     "tmdb:sync-providers": "node scripts/sync-providers.js",
     "tmdb:sync-catalog": "node scripts/sync-catalog.js",
-    "catalog:summary": "node scripts/catalog-summary.js"
+    "tmdb:sync-genres": "node scripts/sync-genres.js"
   },
   "keywords": [],
   "author": "L3kant",
