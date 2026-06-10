@@ -9,13 +9,20 @@ const LANGUAGE = 'cs-CZ';
 const args = process.argv.slice(2);
 
 const mediaType = args[0] || 'movie';
+const allServices = args.includes('--all-services');
+
 const pageOption = args.find((arg) => arg.startsWith('--page='));
+const pagesOption = args.find((arg) => arg.startsWith('--pages='));
+
 const page = pageOption ? Number(pageOption.split('=')[1]) : 1;
+const pages = pagesOption ? Number(pagesOption.split('=')[1]) : 1;
 
 const serviceName =
   args
     .slice(1)
     .filter((arg) => !arg.startsWith('--page='))
+    .filter((arg) => !arg.startsWith('--pages='))
+    .filter((arg) => arg !== '--all-services')
     .join(' ') || null;
 
 const SUPPORTED_MEDIA_TYPES = ['movie', 'tv'];
@@ -30,7 +37,39 @@ if (!Number.isInteger(page) || page < 1 || page > 500) {
   process.exit(1);
 }
 
-function getTargetService() {
+if (!Number.isInteger(pages) || pages < 1 || pages > 20) {
+  console.error('Invalid pages. Use a number from 1 to 20.');
+  process.exit(1);
+}
+
+if (allServices && serviceName) {
+  console.error('Use either a service name or --all-services, not both.');
+  process.exit(1);
+}
+
+function getTargetServices() {
+  if (allServices) {
+    const services = db
+      .prepare(`
+        SELECT
+          service_id,
+          service_name,
+          provider_key
+        FROM streaming_services
+        WHERE active_flag = 1
+          AND provider_key IS NOT NULL
+          AND provider_key != ''
+        ORDER BY service_name
+      `)
+      .all();
+
+    if (services.length === 0) {
+      throw new Error('No active services with provider_key found.');
+    }
+
+    return services;
+  }
+
   const service = db
     .prepare(`
       SELECT
@@ -55,7 +94,7 @@ function getTargetService() {
     );
   }
 
-  return service;
+  return [service];
 }
 
 function getDiscoverPath() {
@@ -66,7 +105,7 @@ function getDiscoverPath() {
   return '/discover/tv';
 }
 
-function buildDiscoverQuery(service) {
+function buildDiscoverQuery(service, currentPage) {
   const query = {
     language: LANGUAGE,
     watch_region: WATCH_REGION,
@@ -74,7 +113,7 @@ function buildDiscoverQuery(service) {
     with_watch_monetization_types: 'flatrate',
     sort_by: 'popularity.desc',
     include_adult: 'false',
-    page,
+    page: currentPage,
   };
 
   if (mediaType === 'tv') {
@@ -294,31 +333,60 @@ function saveResults(results, service) {
   return stats;
 }
 
+function addStats(target, source) {
+  target.titlesInserted += source.titlesInserted;
+  target.titlesUpdated += source.titlesUpdated;
+  target.linksInserted += source.linksInserted;
+  target.linksExisting += source.linksExisting;
+}
+
 async function main() {
-  const service = getTargetService();
+  const services = getTargetServices();
 
   console.log('Sync catalog');
   console.log('Media type:', mediaType);
   console.log('Region:', WATCH_REGION);
-  console.log('Service:', `${service.service_name} (${service.provider_key})`);
-  console.log('Page:', page);
+  console.log('Services:', allServices ? 'all active services' : services[0].service_name);
+  console.log('Start page:', page);
+  console.log('Pages:', pages);
 
-  const response = await tmdbGet(getDiscoverPath(), buildDiscoverQuery(service));
+  const totalStats = {
+    titlesInserted: 0,
+    titlesUpdated: 0,
+    linksInserted: 0,
+    linksExisting: 0,
+  };
+
+  for (const service of services) {
+    console.log('');
+    console.log(`Service: ${service.service_name} (${service.provider_key})`);
+
+    for (let currentPage = page; currentPage < page + pages; currentPage += 1) {
+      console.log(`Fetching page ${currentPage}...`);
+
+      const response = await tmdbGet(getDiscoverPath(), buildDiscoverQuery(service, currentPage));
+
+      console.log('TMDb response summary:');
+      console.log({
+        page: response.page,
+        total_pages: response.total_pages,
+        total_results: response.total_results,
+        results_on_page: response.results.length,
+      });
+
+      const stats = saveResults(response.results, service);
+      addStats(totalStats, stats);
+
+      if (currentPage >= response.total_pages) {
+        console.log('Reached last available TMDb page.');
+        break;
+      }
+    }
+  }
 
   console.log('');
-  console.log('TMDb response summary:');
-  console.log({
-    page: response.page,
-    total_pages: response.total_pages,
-    total_results: response.total_results,
-    results_on_page: response.results.length,
-  });
-
-  const stats = saveResults(response.results, service);
-
-  console.log('');
-  console.log('Database sync summary:');
-  console.table([stats]);
+  console.log('Database sync total summary:');
+  console.table([totalStats]);
 }
 
 main().catch((error) => {
