@@ -43,6 +43,49 @@ function printServiceCounts() {
   console.table(rows);
 }
 
+function printGenreCounts() {
+  const rows = db
+    .prepare(`
+      SELECT
+        media_type,
+        COUNT(*) AS count
+      FROM media_genres
+      GROUP BY media_type
+      ORDER BY media_type
+    `)
+    .all();
+
+  console.log('');
+  console.log('Genres by media type:');
+  console.table(rows);
+}
+
+function printTopGenres() {
+  const rows = db
+    .prepare(`
+      SELECT
+        mg.media_type,
+        mg.genre_name,
+        COUNT(tg.title_id) AS title_count
+      FROM media_genres mg
+      JOIN title_genres tg
+        ON tg.genre_id = mg.genre_id
+      GROUP BY
+        mg.media_type,
+        mg.genre_name
+      ORDER BY
+        title_count DESC,
+        mg.media_type,
+        mg.genre_name
+      LIMIT 30
+    `)
+    .all();
+
+  console.log('');
+  console.log('Top genres by linked titles:');
+  console.table(rows);
+}
+
 function printMultiServiceTitles() {
   const rows = db
     .prepare(`
@@ -79,6 +122,8 @@ function main() {
 
   printTitleCounts();
   printServiceCounts();
+  printGenreCounts();
+  printTopGenres();
   printMultiServiceTitles();
 }
 
