@@ -78,7 +78,7 @@ function findTargetProvider(providerName) {
 
 async function fetchProviderList(pathname, mediaType) {
   const response = await tmdbGet(pathname, {
-    //language: LANGUAGE,
+    language: LANGUAGE,
     watch_region: WATCH_REGION,
   });
 
