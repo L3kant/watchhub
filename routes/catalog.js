@@ -151,6 +151,85 @@ router.get('/genres', (req, res) => {
   }
 });
 
+router.get('/:titleId', (req, res) => {
+  const titleId = Number(req.params.titleId);
+
+  if (!Number.isInteger(titleId) || titleId < 1) {
+    return res.status(400).json({
+      error: 'Invalid titleId. Expected a positive number.'
+    });
+  }
+
+  try {
+    const title = db
+      .prepare(`
+        SELECT
+          title_id,
+          tmdb_id,
+          media_type,
+          display_title,
+          original_title,
+          release_year,
+          poster_path,
+          rating_value,
+          runtime_minutes,
+          original_language,
+          created_at,
+          updated_at
+        FROM media_titles
+        WHERE title_id = ?
+      `)
+      .get(titleId);
+
+    if (!title) {
+      return res.status(404).json({
+        error: 'Title not found.'
+      });
+    }
+
+    const services = db
+      .prepare(`
+        SELECT
+          s.service_id,
+          s.service_name,
+          ts.official_url
+        FROM title_services ts
+        JOIN streaming_services s
+          ON s.service_id = ts.service_id
+        WHERE ts.title_id = ?
+        ORDER BY s.service_name ASC
+      `)
+      .all(titleId);
+
+    const genres = db
+      .prepare(`
+        SELECT
+          g.genre_id,
+          g.genre_name
+        FROM title_genres tg
+        JOIN media_genres g
+          ON g.genre_id = tg.genre_id
+        WHERE tg.title_id = ?
+        ORDER BY g.genre_name ASC
+      `)
+      .all(titleId);
+
+    return res.json({
+      data: {
+        ...title,
+        services,
+        genres
+      }
+    });
+  } catch (error) {
+    console.error('Failed to load catalog detail:', error);
+
+    return res.status(500).json({
+      error: 'Failed to load catalog detail.'
+    });
+  }
+});
+
 router.get('/', (req, res) => {
   try {
     const filters = {
