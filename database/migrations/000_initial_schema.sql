@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS media_titles (
     media_type TEXT NOT NULL CHECK (media_type IN ('movie', 'tv')),
     display_title TEXT NOT NULL,
     original_title TEXT,
+    overview_text TEXT,
     release_year INTEGER,
     poster_path TEXT,
     rating_value REAL,

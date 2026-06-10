@@ -169,6 +169,7 @@ router.get('/:titleId', (req, res) => {
           media_type,
           display_title,
           original_title,
+          overview_text,
           release_year,
           poster_path,
           rating_value,
