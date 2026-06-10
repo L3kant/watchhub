@@ -47,12 +47,13 @@
         <select id="typeFilter">
           <option value="">Filmy i seriály</option>
           <option value="movie">Filmy</option>
-          <option value="series">Seriály</option>
+          <option value="tv">Seriály</option>
         </select>
       </section>
 
       <section>
         <h2>Katalog</h2>
+        <p id="catalogStatus" class="catalog-status">Načítám katalog...</p>
         <div id="catalog" class="catalog"></div>
       </section>
     </section>
@@ -65,12 +66,12 @@
       </div>
     </aside>
   </main>
+  <footer class="app-footer">
+    <p>
+      This product uses the TMDB API but is not endorsed or certified by TMDB.
+    </p>
+  </footer>
 
   <script src="app.js"></script>
 </body>
-<footer class="app-footer">
-  <p>
-    This product uses the TMDB API but is not endorsed or certified by TMDB.
-  </p>
-</footer>
 </html>
