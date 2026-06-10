@@ -147,6 +147,14 @@ function getReleaseYear(item) {
   return year;
 }
 
+function getOverviewText(item) {
+  if (!item.overview || item.overview.trim() === '') {
+    return null;
+  }
+
+  return item.overview.trim();
+}
+
 function mapTmdbResultToMediaTitle(item) {
   if (mediaType === 'movie') {
     return {
@@ -154,6 +162,7 @@ function mapTmdbResultToMediaTitle(item) {
       media_type: 'movie',
       display_title: item.title || item.original_title || 'Untitled',
       original_title: item.original_title || null,
+      overview_text: getOverviewText(item),
       release_year: getReleaseYear(item),
       poster_path: item.poster_path || null,
       rating_value: item.vote_average ?? null,
@@ -167,6 +176,7 @@ function mapTmdbResultToMediaTitle(item) {
     media_type: 'tv',
     display_title: item.name || item.original_name || 'Untitled',
     original_title: item.original_name || null,
+    overview_text: getOverviewText(item),
     release_year: getReleaseYear(item),
     poster_path: item.poster_path || null,
     rating_value: item.vote_average ?? null,
@@ -194,19 +204,21 @@ function insertMediaTitle(title) {
         media_type,
         display_title,
         original_title,
+        overview_text,
         release_year,
         poster_path,
         rating_value,
         runtime_minutes,
         original_language
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     .run(
       title.tmdb_id,
       title.media_type,
       title.display_title,
       title.original_title,
+      title.overview_text,
       title.release_year,
       title.poster_path,
       title.rating_value,
@@ -223,6 +235,7 @@ function updateMediaTitle(titleId, title) {
     SET
       display_title = ?,
       original_title = ?,
+      overview_text = ?,
       release_year = ?,
       poster_path = ?,
       rating_value = ?,
@@ -233,6 +246,7 @@ function updateMediaTitle(titleId, title) {
   `).run(
     title.display_title,
     title.original_title,
+    title.overview_text,
     title.release_year,
     title.poster_path,
     title.rating_value,
