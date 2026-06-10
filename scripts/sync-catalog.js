@@ -294,13 +294,83 @@ function upsertTitleService(titleId, serviceId) {
   return true;
 }
 
-function saveResults(results, service) {
+function getGenreId(tmdbGenreId, mediaType) {
+  const genre = db
+    .prepare(`
+      SELECT genre_id
+      FROM media_genres
+      WHERE tmdb_genre_id = ?
+        AND media_type = ?
+    `)
+    .get(tmdbGenreId, mediaType);
+
+  return genre ? genre.genre_id : null;
+}
+
+function titleGenreExists(titleId, genreId) {
+  const existingLink = db
+    .prepare(`
+      SELECT title_id
+      FROM title_genres
+      WHERE title_id = ?
+        AND genre_id = ?
+    `)
+    .get(titleId, genreId);
+
+  return Boolean(existingLink);
+}
+
+function insertTitleGenre(titleId, genreId) {
+  db.prepare(`
+    INSERT INTO title_genres (
+      title_id,
+      genre_id
+    )
+    VALUES (?, ?)
+  `).run(titleId, genreId);
+}
+
+function syncTitleGenres(titleId, genreIds, mediaType) {
   const stats = {
-    titlesInserted: 0,
-    titlesUpdated: 0,
-    linksInserted: 0,
-    linksExisting: 0,
+    genreLinksInserted: 0,
+    genreLinksExisting: 0,
+    genreLinksSkipped: 0,
   };
+
+  if (!Array.isArray(genreIds)) {
+    return stats;
+  }
+
+  for (const tmdbGenreId of genreIds) {
+    const genreId = getGenreId(tmdbGenreId, mediaType);
+
+    if (!genreId) {
+      stats.genreLinksSkipped += 1;
+      continue;
+    }
+
+    if (titleGenreExists(titleId, genreId)) {
+      stats.genreLinksExisting += 1;
+      continue;
+    }
+
+    insertTitleGenre(titleId, genreId);
+    stats.genreLinksInserted += 1;
+  }
+
+  return stats;
+}
+
+function saveResults(results, service) {
+    const stats = {
+        titlesInserted: 0,
+        titlesUpdated: 0,
+        linksInserted: 0,
+        linksExisting: 0,
+        genreLinksInserted: 0,
+        genreLinksExisting: 0,
+        genreLinksSkipped: 0,
+    };
 
   db.exec('BEGIN');
 
@@ -322,6 +392,16 @@ function saveResults(results, service) {
       } else {
         stats.linksExisting += 1;
       }
+
+      const genreStats = syncTitleGenres(
+        savedTitle.titleId,
+        item.genre_ids,
+        title.media_type
+        );
+
+        stats.genreLinksInserted += genreStats.genreLinksInserted;
+        stats.genreLinksExisting += genreStats.genreLinksExisting;
+        stats.genreLinksSkipped += genreStats.genreLinksSkipped;
     }
 
     db.exec('COMMIT');
@@ -338,6 +418,9 @@ function addStats(target, source) {
   target.titlesUpdated += source.titlesUpdated;
   target.linksInserted += source.linksInserted;
   target.linksExisting += source.linksExisting;
+  target.genreLinksInserted += source.genreLinksInserted;
+  target.genreLinksExisting += source.genreLinksExisting;
+  target.genreLinksSkipped += source.genreLinksSkipped;
 }
 
 async function main() {
@@ -355,6 +438,9 @@ async function main() {
     titlesUpdated: 0,
     linksInserted: 0,
     linksExisting: 0,
+    genreLinksInserted: 0,
+    genreLinksExisting: 0,
+    genreLinksSkipped: 0,
   };
 
   for (const service of services) {
