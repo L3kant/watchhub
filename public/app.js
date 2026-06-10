@@ -68,6 +68,68 @@ function createInfoLine(label, value) {
   return line;
 }
 
+function isSafeExternalUrl(url) {
+  return typeof url === 'string' && url.startsWith('https://');
+}
+
+function createServiceLaunchSection(services) {
+  const section = document.createElement('section');
+  section.className = 'detail-section';
+
+  const heading = document.createElement('h3');
+  heading.textContent = 'Dostupné na';
+
+  const list = document.createElement('div');
+  list.className = 'detail-services';
+
+  if (!Array.isArray(services) || services.length === 0) {
+    const emptyText = document.createElement('p');
+    emptyText.className = 'muted-text';
+    emptyText.textContent = 'Žádná služba není dostupná.';
+
+    list.appendChild(emptyText);
+    section.appendChild(heading);
+    section.appendChild(list);
+
+    return section;
+  }
+
+  for (const service of services) {
+    const row = document.createElement('div');
+    row.className = 'detail-service-row';
+
+    const serviceName = document.createElement('span');
+    serviceName.className = 'service-name';
+    serviceName.textContent = service.service_name || 'Služba';
+
+    row.appendChild(serviceName);
+
+    if (isSafeExternalUrl(service.launch_url)) {
+      const link = document.createElement('a');
+      link.className = 'service-launch-link';
+      link.href = service.launch_url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = service.launch_label || `Otevřít ${serviceName.textContent}`;
+
+      row.appendChild(link);
+    } else {
+      const missingLink = document.createElement('span');
+      missingLink.className = 'muted-text';
+      missingLink.textContent = 'Odkaz není dostupný';
+
+      row.appendChild(missingLink);
+    }
+
+    list.appendChild(row);
+  }
+
+  section.appendChild(heading);
+  section.appendChild(list);
+
+  return section;
+}
+
 function openTitleModal() {
   titleModal.hidden = false;
   document.body.classList.add('modal-open');
@@ -150,10 +212,6 @@ function renderDetail(title) {
   const services = Array.isArray(title.services) ? title.services : [];
   const genres = Array.isArray(title.genres) ? title.genres : [];
 
-  const serviceNames = services.length > 0
-    ? services.map((service) => service.service_name).join(', ')
-    : 'Žádná služba';
-
   const genreNames = genres.length > 0
     ? genres.map((genre) => genre.genre_name).join(', ')
     : 'Bez žánru';
@@ -186,7 +244,7 @@ function renderDetail(title) {
   content.appendChild(createInfoLine('Rok', releaseYearText));
   content.appendChild(createInfoLine('Hodnocení', formatRating(title.rating_value)));
   content.appendChild(createInfoLine('Původní jazyk', languageText));
-  content.appendChild(createInfoLine('Služby', serviceNames));
+  content.appendChild(createServiceLaunchSection(services));
   content.appendChild(createInfoLine('Žánry', genreNames));
   content.appendChild(description);
 

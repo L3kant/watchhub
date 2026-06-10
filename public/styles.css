@@ -242,6 +242,56 @@ body.modal-open {
   text-align: center;
 }
 
+.detail-section {
+  margin: 20px 0;
+}
+
+.detail-section h3 {
+  margin: 0 0 12px;
+}
+
+.detail-services {
+  display: grid;
+  gap: 10px;
+}
+
+.detail-service-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px;
+  border: 1px solid #333;
+  border-radius: 10px;
+  background: #222;
+}
+
+.service-name {
+  font-weight: 700;
+}
+
+.service-launch-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: #111;
+  background: #f5f5f5;
+  text-decoration: none;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.service-launch-link:hover,
+.service-launch-link:focus-visible {
+  opacity: 0.85;
+}
+
+.muted-text {
+  color: #aaa;
+}
+
 @media (max-width: 700px) {
   .content {
     padding: 16px;
@@ -275,5 +325,14 @@ body.modal-open {
 
   .detail-poster {
     max-width: 260px;
+  }
+
+    .detail-service-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .service-launch-link {
+    width: 100%;
   }
 }
