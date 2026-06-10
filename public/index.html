@@ -17,17 +17,6 @@
   </header>
 
   <main class="app-layout">
-    <aside class="sidebar">
-      <h2>Moje služby</h2>
-
-      <ul class="service-list">
-        <li>Netflix</li>
-        <li>Disney+</li>
-        <li>Max</li>
-        <li>SkyShowtime</li>
-      </ul>
-    </aside>
-
     <section class="content">
       <section class="filters">
         <input
@@ -61,15 +50,33 @@
         <div id="catalog" class="catalog"></div>
       </section>
     </section>
-
-    <aside class="detail-panel">
-      <h2>Detail titulu</h2>
-
-      <div id="titleDetail" class="title-detail empty">
-        Vyber titul z katalogu.
-      </div>
-    </aside>
   </main>
+
+  <div id="titleModal" class="modal" hidden>
+    <div class="modal-backdrop" data-modal-close></div>
+
+    <section
+      class="modal-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modalTitle"
+    >
+      <button
+        id="closeTitleModal"
+        class="modal-close"
+        type="button"
+        aria-label="Zavřít detail titulu"
+      >
+        ×
+      </button>
+
+      <div id="titleDetail" class="title-detail">
+        <h2 id="modalTitle">Detail titulu</h2>
+        <p>Načítám detail...</p>
+      </div>
+    </section>
+  </div>
+
   <footer class="app-footer">
     <p>
       This product uses the TMDB API but is not endorsed or certified by TMDB.

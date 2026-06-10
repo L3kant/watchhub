@@ -5,6 +5,8 @@ const serviceFilter = document.querySelector('#serviceFilter');
 const typeFilter = document.querySelector('#typeFilter');
 const genreFilter = document.querySelector('#genreFilter');
 const catalogStatus = document.querySelector('#catalogStatus');
+const titleModal = document.querySelector('#titleModal');
+const closeTitleModalButton = document.querySelector('#closeTitleModal');
 
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w342';
 
@@ -40,7 +42,7 @@ function createBadge(text, secondary = false) {
 function createPoster(title, className) {
   if (!title.poster_path) {
     const placeholder = document.createElement('div');
-    placeholder.className = 'title-poster-placeholder';
+    placeholder.className = `${className} title-poster-placeholder`;
     placeholder.textContent = 'Bez plakátu';
     return placeholder;
   }
@@ -54,9 +56,32 @@ function createPoster(title, className) {
   return image;
 }
 
+function createInfoLine(label, value) {
+  const line = document.createElement('p');
+
+  const strong = document.createElement('strong');
+  strong.textContent = `${label}: `;
+
+  line.appendChild(strong);
+  line.append(String(value));
+
+  return line;
+}
+
+function openTitleModal() {
+  titleModal.hidden = false;
+  document.body.classList.add('modal-open');
+}
+
+function closeTitleModal() {
+  titleModal.hidden = true;
+  document.body.classList.remove('modal-open');
+}
+
 function createCatalogCard(title) {
   const card = document.createElement('article');
   card.className = 'title-card';
+  card.tabIndex = 0;
 
   const poster = createPoster(title, 'title-poster');
 
@@ -69,8 +94,15 @@ function createCatalogCard(title) {
   const services = document.createElement('div');
   services.className = 'badge-list';
 
-  for (const service of title.services) {
+  for (const service of title.services || []) {
     services.appendChild(createBadge(service.service_name));
+  }
+
+  const genres = document.createElement('div');
+  genres.className = 'badge-list';
+
+  for (const genre of title.genres || []) {
+    genres.appendChild(createBadge(genre.genre_name, true));
   }
 
   const rating = document.createElement('span');
@@ -81,10 +113,18 @@ function createCatalogCard(title) {
   card.appendChild(heading);
   card.appendChild(meta);
   card.appendChild(services);
+  card.appendChild(genres);
   card.appendChild(rating);
 
   card.addEventListener('click', () => {
-    renderDetail(title);
+    loadTitleDetail(title.title_id);
+  });
+
+  card.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      loadTitleDetail(title.title_id);
+    }
   });
 
   return card;
@@ -107,56 +147,91 @@ function renderCatalog(titles) {
 }
 
 function renderDetail(title) {
-  detailElement.classList.remove('empty');
-  detailElement.innerHTML = '';
+  const services = Array.isArray(title.services) ? title.services : [];
+  const genres = Array.isArray(title.genres) ? title.genres : [];
+
+  const serviceNames = services.length > 0
+    ? services.map((service) => service.service_name).join(', ')
+    : 'Žádná služba';
+
+  const genreNames = genres.length > 0
+    ? genres.map((genre) => genre.genre_name).join(', ')
+    : 'Bez žánru';
+
+  const originalTitleText = title.original_title || 'Není dostupný';
+  const releaseYearText = title.release_year || 'neznámý rok';
+  const languageText = title.original_language || 'neznámý jazyk';
 
   const poster = createPoster(title, 'detail-poster');
 
-  const heading = document.createElement('h3');
+  detailElement.innerHTML = '';
+
+  const wrapper = document.createElement('article');
+  wrapper.className = 'detail-card';
+
+  const content = document.createElement('div');
+  content.className = 'detail-content';
+
+  const heading = document.createElement('h2');
+  heading.id = 'modalTitle';
   heading.textContent = title.display_title;
 
-  const meta = document.createElement('p');
-  meta.className = 'detail-meta';
-  meta.textContent = `${getTypeLabel(title.media_type)} · ${title.release_year || 'neznámý rok'}`;
-
-  const rating = document.createElement('p');
-  rating.innerHTML = `
-    <strong>Hodnocení:</strong> ${formatRating(title.rating_value)}<br>
-    <strong>Jazyk:</strong> ${title.original_language || 'neznámý'}
-  `;
-
-  const servicesTitle = document.createElement('strong');
-  servicesTitle.textContent = 'Služby:';
-
-  const serviceList = document.createElement('div');
-  serviceList.className = 'detail-service-list';
-
-  for (const service of title.services) {
-    serviceList.appendChild(createBadge(service.service_name));
-  }
-
-  const genresTitle = document.createElement('strong');
-  genresTitle.textContent = 'Žánry:';
-
-  const genreList = document.createElement('div');
-  genreList.className = 'detail-genre-list';
-
-  for (const genre of title.genres) {
-    genreList.appendChild(createBadge(genre.genre_name, true));
-  }
-
   const description = document.createElement('p');
-  description.textContent = 'Popis zatím v databázi nemáme. Přidáme ho v další fázi detailu titulu.';
+  description.className = 'detail-description';
+  description.textContent = 'Popis zatím v lokální databázi není. Doplníme ho v dalším kroku Fáze 9.';
 
-  detailElement.appendChild(poster);
-  detailElement.appendChild(heading);
-  detailElement.appendChild(meta);
-  detailElement.appendChild(rating);
-  detailElement.appendChild(servicesTitle);
-  detailElement.appendChild(serviceList);
-  detailElement.appendChild(genresTitle);
-  detailElement.appendChild(genreList);
-  detailElement.appendChild(description);
+  content.appendChild(heading);
+  content.appendChild(createInfoLine('Originální název', originalTitleText));
+  content.appendChild(createInfoLine('Typ', getTypeLabel(title.media_type)));
+  content.appendChild(createInfoLine('Rok', releaseYearText));
+  content.appendChild(createInfoLine('Hodnocení', formatRating(title.rating_value)));
+  content.appendChild(createInfoLine('Původní jazyk', languageText));
+  content.appendChild(createInfoLine('Služby', serviceNames));
+  content.appendChild(createInfoLine('Žánry', genreNames));
+  content.appendChild(description);
+
+  wrapper.appendChild(poster);
+  wrapper.appendChild(content);
+
+  detailElement.appendChild(wrapper);
+}
+
+function showDetailLoading() {
+  detailElement.innerHTML = `
+    <h2 id="modalTitle">Detail titulu</h2>
+    <p>Načítám detail titulu...</p>
+  `;
+}
+
+function showDetailError() {
+  detailElement.innerHTML = `
+    <h2 id="modalTitle">Detail titulu</h2>
+    <p>Detail titulu se nepodařilo načíst.</p>
+  `;
+}
+
+async function loadTitleDetail(titleId) {
+  if (!titleId) {
+    return;
+  }
+
+  openTitleModal();
+  showDetailLoading();
+
+  try {
+    const response = await fetch(`/api/catalog/${titleId}`);
+
+    if (!response.ok) {
+      throw new Error(`Detail request failed with status ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    renderDetail(result.data);
+  } catch (error) {
+    console.error('Failed to load title detail:', error);
+    showDetailError();
+  }
 }
 
 function buildCatalogUrl() {
@@ -236,6 +311,20 @@ searchInput.addEventListener('input', loadCatalog);
 serviceFilter.addEventListener('change', loadCatalog);
 typeFilter.addEventListener('change', loadCatalog);
 genreFilter.addEventListener('change', loadCatalog);
+
+closeTitleModalButton.addEventListener('click', closeTitleModal);
+
+titleModal.addEventListener('click', (event) => {
+  if (event.target.dataset.modalClose !== undefined) {
+    closeTitleModal();
+  }
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !titleModal.hidden) {
+    closeTitleModal();
+  }
+});
 
 loadCatalog();
 loadGenres();
