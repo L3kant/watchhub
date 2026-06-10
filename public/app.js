@@ -178,7 +178,7 @@ function renderDetail(title) {
 
   const description = document.createElement('p');
   description.className = 'detail-description';
-  description.textContent = title.overview || 'Popis zatím v lokální databázi není.';
+  description.textContent = title.overview_text || 'Popis zatím v lokální databázi není.';
 
   content.appendChild(heading);
   content.appendChild(createInfoLine('Originální název', originalTitleText));
