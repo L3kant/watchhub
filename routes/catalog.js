@@ -3,6 +3,8 @@ const db = require('../database/db');
 
 const router = express.Router();
 
+const ALLOWED_MEDIA_TYPES = ['movie', 'tv'];
+
 function parseLimit(value) {
   const parsed = Number.parseInt(value, 10);
 
@@ -21,28 +23,116 @@ function parseLimit(value) {
   return parsed;
 }
 
+function parseSearch(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  return value.trim();
+}
+
+function parseService(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  return value.trim();
+}
+
+function parseMediaType(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  const mediaType = value.trim();
+
+  if (!ALLOWED_MEDIA_TYPES.includes(mediaType)) {
+    return '';
+  }
+
+  return mediaType;
+}
+
+function buildCatalogWhereClause(filters) {
+  const conditions = [];
+  const params = [];
+
+  if (filters.search !== '') {
+    conditions.push(`
+      (
+        mt.display_title LIKE ?
+        OR mt.original_title LIKE ?
+      )
+    `);
+
+    const searchPattern = `%${filters.search}%`;
+
+    params.push(searchPattern, searchPattern);
+  }
+
+  if (filters.mediaType !== '') {
+    conditions.push('mt.media_type = ?');
+    params.push(filters.mediaType);
+  }
+
+  if (filters.service !== '') {
+    conditions.push(`
+      EXISTS (
+        SELECT 1
+        FROM title_services ts_filter
+        JOIN streaming_services ss_filter
+          ON ss_filter.service_id = ts_filter.service_id
+        WHERE ts_filter.title_id = mt.title_id
+          AND ss_filter.service_name = ?
+      )
+    `);
+
+    params.push(filters.service);
+  }
+
+  if (conditions.length === 0) {
+    return {
+      whereSql: '',
+      params,
+    };
+  }
+
+  return {
+    whereSql: `WHERE ${conditions.join(' AND ')}`,
+    params,
+  };
+}
+
 router.get('/', (req, res) => {
   try {
+    const filters = {
+      search: parseSearch(req.query.search),
+      service: parseService(req.query.service),
+      mediaType: parseMediaType(req.query.type),
+    };
+
     const limit = parseLimit(req.query.limit);
+    const { whereSql, params } = buildCatalogWhereClause(filters);
 
     const titles = db
       .prepare(`
         SELECT
-          title_id,
-          tmdb_id,
-          media_type,
-          display_title,
-          original_title,
-          release_year,
-          poster_path,
-          rating_value,
-          runtime_minutes,
-          original_language
-        FROM media_titles
-        ORDER BY rating_value DESC, display_title ASC
+          mt.title_id,
+          mt.tmdb_id,
+          mt.media_type,
+          mt.display_title,
+          mt.original_title,
+          mt.release_year,
+          mt.poster_path,
+          mt.rating_value,
+          mt.runtime_minutes,
+          mt.original_language
+        FROM media_titles mt
+        ${whereSql}
+        ORDER BY mt.rating_value DESC, mt.display_title ASC
         LIMIT ?
       `)
-      .all(limit);
+      .all(...params, limit);
 
     if (titles.length === 0) {
       return res.json({ data: [] });
@@ -112,7 +202,11 @@ router.get('/', (req, res) => {
       genres: genresByTitleId.get(title.title_id) || [],
     }));
 
-    res.json({ data });
+    res.json({
+      filters,
+      count: data.length,
+      data,
+    });
   } catch (error) {
     console.error('Failed to load catalog:', error);
 

@@ -7,7 +7,7 @@ const catalogStatus = document.querySelector('#catalogStatus');
 
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w342';
 
-let catalogTitles = [];
+let currentTitles = [];
 
 function getTypeLabel(type) {
   if (type === 'movie') {
@@ -53,96 +53,56 @@ function createPoster(title, className) {
   return image;
 }
 
-function titleMatchesSearch(title, searchValue) {
-  const displayTitle = title.display_title || '';
-  const originalTitle = title.original_title || '';
+function createCatalogCard(title) {
+  const card = document.createElement('article');
+  card.className = 'title-card';
 
-  return (
-    displayTitle.toLowerCase().includes(searchValue) ||
-    originalTitle.toLowerCase().includes(searchValue)
-  );
-}
+  const poster = createPoster(title, 'title-poster');
 
-function titleMatchesService(title, selectedService) {
-  if (selectedService === '') {
-    return true;
+  const heading = document.createElement('h3');
+  heading.textContent = title.display_title;
+
+  const meta = document.createElement('p');
+  meta.textContent = `${getTypeLabel(title.media_type)} · ${title.release_year || 'neznámý rok'}`;
+
+  const services = document.createElement('div');
+  services.className = 'badge-list';
+
+  for (const service of title.services) {
+    services.appendChild(createBadge(service.service_name));
   }
 
-  return title.services.some((service) => {
-    return service.service_name === selectedService;
+  const rating = document.createElement('span');
+  rating.className = 'badge';
+  rating.textContent = `Hodnocení ${formatRating(title.rating_value)}`;
+
+  card.appendChild(poster);
+  card.appendChild(heading);
+  card.appendChild(meta);
+  card.appendChild(services);
+  card.appendChild(rating);
+
+  card.addEventListener('click', () => {
+    renderDetail(title);
   });
+
+  return card;
 }
 
-function titleMatchesType(title, selectedType) {
-  if (selectedType === '') {
-    return true;
-  }
-
-  return title.media_type === selectedType;
-}
-
-function getFilteredTitles() {
-  const searchValue = searchInput.value.trim().toLowerCase();
-  const selectedService = serviceFilter.value;
-  const selectedType = typeFilter.value;
-
-  return catalogTitles.filter((title) => {
-    return (
-      titleMatchesSearch(title, searchValue) &&
-      titleMatchesService(title, selectedService) &&
-      titleMatchesType(title, selectedType)
-    );
-  });
-}
-
-function renderCatalog() {
-  const filteredTitles = getFilteredTitles();
-
+function renderCatalog(titles) {
   catalogElement.innerHTML = '';
 
-  if (filteredTitles.length === 0) {
+  if (titles.length === 0) {
     catalogElement.innerHTML = '<p>Nenalezen žádný titul.</p>';
     catalogStatus.textContent = 'Zobrazeno titulů: 0';
     return;
   }
 
-  for (const title of filteredTitles) {
-    const card = document.createElement('article');
-    card.className = 'title-card';
-
-    const poster = createPoster(title, 'title-poster');
-
-    const heading = document.createElement('h3');
-    heading.textContent = title.display_title;
-
-    const meta = document.createElement('p');
-    meta.textContent = `${getTypeLabel(title.media_type)} · ${title.release_year || 'neznámý rok'}`;
-
-    const services = document.createElement('div');
-    services.className = 'badge-list';
-
-    for (const service of title.services) {
-      services.appendChild(createBadge(service.service_name));
-    }
-
-    const rating = document.createElement('span');
-    rating.className = 'badge';
-    rating.textContent = `Hodnocení ${formatRating(title.rating_value)}`;
-
-    card.appendChild(poster);
-    card.appendChild(heading);
-    card.appendChild(meta);
-    card.appendChild(services);
-    card.appendChild(rating);
-
-    card.addEventListener('click', () => {
-      renderDetail(title);
-    });
-
-    catalogElement.appendChild(card);
+  for (const title of titles) {
+    catalogElement.appendChild(createCatalogCard(title));
   }
 
-  catalogStatus.textContent = `Zobrazeno titulů: ${filteredTitles.length}`;
+  catalogStatus.textContent = `Zobrazeno titulů: ${titles.length}`;
 }
 
 function renderDetail(title) {
@@ -198,11 +158,35 @@ function renderDetail(title) {
   detailElement.appendChild(description);
 }
 
+function buildCatalogUrl() {
+  const params = new URLSearchParams();
+
+  params.set('limit', '100');
+
+  const searchValue = searchInput.value.trim();
+  const selectedService = serviceFilter.value;
+  const selectedType = typeFilter.value;
+
+  if (searchValue !== '') {
+    params.set('search', searchValue);
+  }
+
+  if (selectedService !== '') {
+    params.set('service', selectedService);
+  }
+
+  if (selectedType !== '') {
+    params.set('type', selectedType);
+  }
+
+  return `/api/catalog?${params.toString()}`;
+}
+
 async function loadCatalog() {
   try {
     catalogStatus.textContent = 'Načítám katalog...';
 
-    const response = await fetch('/api/catalog?limit=100');
+    const response = await fetch(buildCatalogUrl());
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
@@ -210,8 +194,8 @@ async function loadCatalog() {
 
     const result = await response.json();
 
-    catalogTitles = result.data;
-    renderCatalog();
+    currentTitles = result.data;
+    renderCatalog(currentTitles);
   } catch (error) {
     console.error('Failed to load catalog:', error);
 
@@ -220,8 +204,8 @@ async function loadCatalog() {
   }
 }
 
-searchInput.addEventListener('input', renderCatalog);
-serviceFilter.addEventListener('change', renderCatalog);
-typeFilter.addEventListener('change', renderCatalog);
+searchInput.addEventListener('input', loadCatalog);
+serviceFilter.addEventListener('change', loadCatalog);
+typeFilter.addEventListener('change', loadCatalog);
 
 loadCatalog();
