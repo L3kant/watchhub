@@ -130,6 +130,52 @@ function createServiceLaunchSection(services) {
   return section;
 }
 
+function hasExternalLinks(services) {
+  return Array.isArray(services) && services.some((service) => {
+    return (
+      typeof service.external_url === 'string' &&
+      service.external_url.startsWith('https://')
+    );
+  });
+}
+
+function createExternalLinksRefreshSection(title) {
+  const section = document.createElement('section');
+  section.className = 'detail-section';
+
+  const heading = document.createElement('h3');
+  heading.textContent = 'Konkrétní odkazy';
+
+  const description = document.createElement('p');
+  description.className = 'muted-text';
+
+  const services = Array.isArray(title.services) ? title.services : [];
+  const externalLinksExist = hasExternalLinks(services);
+
+  if (externalLinksExist) {
+    description.textContent = 'Konkrétní odkazy jsou uložené v lokální databázi.';
+  } else {
+    description.textContent = 'Zatím jsou použité fallback odkazy. Konkrétní odkazy můžeš načíst ručně.';
+  }
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'external-links-refresh-button';
+  button.textContent = externalLinksExist
+    ? 'Obnovit konkrétní odkazy'
+    : 'Načíst konkrétní odkazy';
+
+  button.addEventListener('click', () => {
+    refreshExternalLinks(title.title_id, button);
+  });
+
+  section.appendChild(heading);
+  section.appendChild(description);
+  section.appendChild(button);
+
+  return section;
+}
+
 function openTitleModal() {
   titleModal.hidden = false;
   document.body.classList.add('modal-open');
@@ -245,6 +291,7 @@ function renderDetail(title) {
   content.appendChild(createInfoLine('Hodnocení', formatRating(title.rating_value)));
   content.appendChild(createInfoLine('Původní jazyk', languageText));
   content.appendChild(createServiceLaunchSection(services));
+  content.appendChild(createExternalLinksRefreshSection(title));
   content.appendChild(createInfoLine('Žánry', genreNames));
   content.appendChild(description);
 
@@ -266,6 +313,42 @@ function showDetailError() {
     <h2 id="modalTitle">Detail titulu</h2>
     <p>Detail titulu se nepodařilo načíst.</p>
   `;
+}
+
+async function refreshExternalLinks(titleId, button) {
+  if (!titleId) {
+    return;
+  }
+
+  const originalText = button.textContent;
+
+  button.disabled = true;
+  button.textContent = 'Načítám odkazy...';
+
+  try {
+    const response = await fetch(`/api/catalog/${titleId}/external-links/refresh`, {
+      method: 'POST',
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || `HTTP ${response.status}`);
+    }
+
+    await loadTitleDetail(titleId);
+
+    if (result.data.updated_count === 0) {
+      alert('Movie of the Night pro tento titul nevrátil žádný nový konkrétní odkaz.');
+    }
+  } catch (error) {
+    console.error('Failed to refresh external links:', error);
+
+    button.disabled = false;
+    button.textContent = originalText;
+
+    alert('Konkrétní odkazy se nepodařilo načíst.');
+  }
 }
 
 async function loadTitleDetail(titleId) {
