@@ -123,12 +123,34 @@ function buildDiscoverQuery(service, currentPage) {
   return query;
 }
 
-function getReleaseDate(item) {
-  if (mediaType === 'movie') {
-    return item.release_date || null;
+function normalizeTmdbDate(value) {
+  if (typeof value !== 'string') {
+    return null;
   }
 
-  return item.first_air_date || null;
+  const trimmedValue = value.trim();
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmedValue)) {
+    return null;
+  }
+
+  return trimmedValue;
+}
+
+function getReleaseDate(item) {
+  if (mediaType === 'movie') {
+    return normalizeTmdbDate(item.release_date);
+  }
+
+  return normalizeTmdbDate(item.first_air_date);
+}
+
+function getExactDateFields(item) {
+  return {
+    release_date: mediaType === 'movie' ? normalizeTmdbDate(item.release_date) : null,
+    first_air_date: mediaType === 'tv' ? normalizeTmdbDate(item.first_air_date) : null,
+    adult_flag: item.adult === true ? 1 : 0,
+  };
 }
 
 function getReleaseYear(item) {
@@ -156,6 +178,8 @@ function getOverviewText(item) {
 }
 
 function mapTmdbResultToMediaTitle(item) {
+  const exactDateFields = getExactDateFields(item);
+
   if (mediaType === 'movie') {
     return {
       tmdb_id: item.id,
@@ -164,6 +188,9 @@ function mapTmdbResultToMediaTitle(item) {
       original_title: item.original_title || null,
       overview_text: getOverviewText(item),
       release_year: getReleaseYear(item),
+      release_date: exactDateFields.release_date,
+      first_air_date: exactDateFields.first_air_date,
+      adult_flag: exactDateFields.adult_flag,
       poster_path: item.poster_path || null,
       rating_value: item.vote_average ?? null,
       runtime_minutes: null,
@@ -178,6 +205,9 @@ function mapTmdbResultToMediaTitle(item) {
     original_title: item.original_name || null,
     overview_text: getOverviewText(item),
     release_year: getReleaseYear(item),
+    release_date: exactDateFields.release_date,
+    first_air_date: exactDateFields.first_air_date,
+    adult_flag: exactDateFields.adult_flag,
     poster_path: item.poster_path || null,
     rating_value: item.vote_average ?? null,
     runtime_minutes: null,
@@ -206,12 +236,15 @@ function insertMediaTitle(title) {
         original_title,
         overview_text,
         release_year,
+        release_date,
+        first_air_date,
+        adult_flag,
         poster_path,
         rating_value,
         runtime_minutes,
         original_language
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     .run(
       title.tmdb_id,
@@ -220,6 +253,9 @@ function insertMediaTitle(title) {
       title.original_title,
       title.overview_text,
       title.release_year,
+      title.release_date,
+      title.first_air_date,
+      title.adult_flag,
       title.poster_path,
       title.rating_value,
       title.runtime_minutes,
@@ -237,6 +273,9 @@ function updateMediaTitle(titleId, title) {
       original_title = ?,
       overview_text = ?,
       release_year = ?,
+      release_date = ?,
+      first_air_date = ?,
+      adult_flag = ?,
       poster_path = ?,
       rating_value = ?,
       runtime_minutes = ?,
@@ -248,6 +287,9 @@ function updateMediaTitle(titleId, title) {
     title.original_title,
     title.overview_text,
     title.release_year,
+    title.release_date,
+    title.first_air_date,
+    title.adult_flag,
     title.poster_path,
     title.rating_value,
     title.runtime_minutes,
