@@ -71,3 +71,48 @@ CREATE TABLE IF NOT EXISTS user_subscriptions (
         REFERENCES streaming_services(service_id)
         ON DELETE CASCADE
 ) STRICT;
+
+CREATE TABLE IF NOT EXISTS user_profiles (
+  profile_id INTEGER PRIMARY KEY,
+  profile_name TEXT NOT NULL UNIQUE,
+
+  max_age_rating INTEGER NOT NULL DEFAULT 18
+    CHECK (max_age_rating >= 0 AND max_age_rating <= 18),
+
+  blocked_services_json TEXT NOT NULL DEFAULT '[]',
+
+  is_admin INTEGER NOT NULL DEFAULT 0
+    CHECK (is_admin IN (0, 1)),
+
+  avatar_key TEXT,
+  color_key TEXT,
+
+  active_flag INTEGER NOT NULL DEFAULT 1
+    CHECK (active_flag IN (0, 1)),
+
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+) STRICT;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_profiles_single_admin
+ON user_profiles (is_admin)
+WHERE is_admin = 1;
+
+INSERT OR IGNORE INTO user_profiles (
+  profile_name,
+  max_age_rating,
+  blocked_services_json,
+  is_admin,
+  avatar_key,
+  color_key,
+  active_flag
+)
+VALUES (
+  'Výchozí',
+  18,
+  '[]',
+  1,
+  'default',
+  'blue',
+  1
+);
