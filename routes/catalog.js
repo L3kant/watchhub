@@ -1,5 +1,6 @@
 const express = require('express');
 const db = require('../database/db');
+const { fetchShowByTmdbId } = require('../clients/movieOfTheNightClient');
 
 const router = express.Router();
 
@@ -73,13 +74,22 @@ function isUsableOfficialUrl(value) {
 }
 
 function buildServiceLaunchLink(title, service) {
-  const serviceName = service.service_name;
+    const serviceName = service.service_name;
   const officialUrl = service.official_url?.trim();
+  const externalUrl = service.external_url?.trim();
 
   if (isUsableOfficialUrl(officialUrl)) {
     return {
       launch_url: officialUrl,
       launch_type: 'official',
+      launch_label: `Otevřít na ${serviceName}`,
+    };
+  }
+
+  if (isSafeExternalLink(externalUrl)) {
+    return {
+      launch_url: externalUrl,
+      launch_type: service.external_url_source || 'external',
       launch_label: `Otevřít na ${serviceName}`,
     };
   }
@@ -178,6 +188,55 @@ function parseGenre(value) {
   }
 
   return value.trim();
+}
+
+function parsePositiveInteger(value) {
+  const parsedValue = Number(value);
+
+  if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
+    return null;
+  }
+
+  return parsedValue;
+}
+
+function isSafeExternalLink(value) {
+  return typeof value === 'string' && value.trim().startsWith('https://');
+}
+
+function getCountryStreamingOptions(showData, countryCode = 'cz') {
+  const streamingOptions = showData?.streamingOptions;
+
+  if (!streamingOptions || typeof streamingOptions !== 'object') {
+    return [];
+  }
+
+  const options = streamingOptions[countryCode] || streamingOptions[countryCode.toUpperCase()];
+
+  if (!Array.isArray(options)) {
+    return [];
+  }
+
+  return options;
+}
+
+function getPreferredStreamingOption(options, motnServiceId) {
+  const matchingOptions = options.filter((option) => {
+    return (
+      option?.service?.id === motnServiceId &&
+      isSafeExternalLink(option.link)
+    );
+  });
+
+  if (matchingOptions.length === 0) {
+    return null;
+  }
+
+  const subscriptionOption = matchingOptions.find((option) => {
+    return option.type === 'subscription';
+  });
+
+  return subscriptionOption || matchingOptions[0];
 }
 
 function buildCatalogWhereClause(filters) {
@@ -310,14 +369,18 @@ router.get('/:titleId', (req, res) => {
     const rawServices = db
       .prepare(`
         SELECT
-          s.service_id,
-          s.service_name,
-          ts.official_url
+          ss.service_id,
+          ss.service_name,
+          ss.motn_service_id,
+          ts.official_url,
+          ts.external_url,
+          ts.external_url_source,
+          ts.external_url_synced_at
         FROM title_services ts
-        JOIN streaming_services s
-          ON s.service_id = ts.service_id
+        JOIN streaming_services ss
+          ON ss.service_id = ts.service_id
         WHERE ts.title_id = ?
-        ORDER BY s.service_name ASC
+        ORDER BY ss.service_name
       `)
       .all(titleId);
 
@@ -354,6 +417,130 @@ router.get('/:titleId', (req, res) => {
 
     return res.status(500).json({
       error: 'Failed to load catalog detail.'
+    });
+  }
+});
+
+router.post('/:titleId/external-links/refresh', async (req, res) => {
+  const titleId = parsePositiveInteger(req.params.titleId);
+
+  if (!titleId) {
+    return res.status(400).json({
+      error: 'titleId must be a positive number.',
+    });
+  }
+
+  try {
+    const title = db
+      .prepare(`
+        SELECT
+          title_id,
+          tmdb_id,
+          media_type,
+          display_title,
+          original_title
+        FROM media_titles
+        WHERE title_id = ?
+      `)
+      .get(titleId);
+
+    if (!title) {
+      return res.status(404).json({
+        error: 'Title was not found.',
+      });
+    }
+
+    if (!title.tmdb_id || !title.media_type) {
+      return res.status(400).json({
+        error: 'Title does not have enough data for external link refresh.',
+      });
+    }
+
+    const services = db
+      .prepare(`
+        SELECT
+          ss.service_id,
+          ss.service_name,
+          ss.motn_service_id
+        FROM title_services ts
+        JOIN streaming_services ss
+          ON ss.service_id = ts.service_id
+        WHERE ts.title_id = ?
+          AND ss.motn_service_id IS NOT NULL
+      `)
+      .all(titleId);
+
+    if (services.length === 0) {
+      return res.status(404).json({
+        error: 'No services with Movie of the Night mapping were found for this title.',
+      });
+    }
+
+    const showData = await fetchShowByTmdbId({
+      mediaType: title.media_type,
+      tmdbId: title.tmdb_id,
+      country: 'cz',
+    });
+
+    const countryOptions = getCountryStreamingOptions(showData, 'cz');
+    const syncedAt = new Date().toISOString();
+
+    let updatedCount = 0;
+    const updatedServices = [];
+
+    const updateExternalUrl = db.prepare(`
+      UPDATE title_services
+      SET
+        external_url = ?,
+        external_url_source = ?,
+        external_url_synced_at = ?
+      WHERE title_id = ?
+        AND service_id = ?
+    `);
+
+    for (const service of services) {
+      const selectedOption = getPreferredStreamingOption(
+        countryOptions,
+        service.motn_service_id
+      );
+
+      if (!selectedOption) {
+        continue;
+      }
+
+      updateExternalUrl.run(
+        selectedOption.link.trim(),
+        'movieofthenight',
+        syncedAt,
+        titleId,
+        service.service_id
+      );
+
+      updatedCount += 1;
+
+      updatedServices.push({
+        service_id: service.service_id,
+        service_name: service.service_name,
+        motn_service_id: service.motn_service_id,
+        external_url: selectedOption.link.trim(),
+        option_type: selectedOption.type || null,
+      });
+    }
+
+    return res.json({
+      data: {
+        title_id: titleId,
+        tmdb_id: title.tmdb_id,
+        media_type: title.media_type,
+        updated_count: updatedCount,
+        updated_services: updatedServices,
+      },
+    });
+  } catch (error) {
+    console.error('Failed to refresh external links:', error);
+
+    return res.status(500).json({
+      error: 'Failed to refresh external links.',
     });
   }
 });
@@ -403,7 +590,11 @@ router.get('/', (req, res) => {
           ts.title_id,
           ss.service_id,
           ss.service_name,
-          ts.official_url
+          ss.motn_service_id,
+          ts.official_url,
+          ts.external_url,
+          ts.external_url_source,
+          ts.external_url_synced_at
         FROM title_services ts
         JOIN streaming_services ss
           ON ss.service_id = ts.service_id
