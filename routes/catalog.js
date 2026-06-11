@@ -200,6 +200,72 @@ function parsePositiveInteger(value) {
   return parsedValue;
 }
 
+function parseOptionalPositiveInteger(value, fieldName) {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+
+  if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
+    const error = new Error(`${fieldName} must be a positive number.`);
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return parsedValue;
+}
+
+function parseBlockedServices(value) {
+  try {
+    const parsedValue = JSON.parse(value);
+
+    if (!Array.isArray(parsedValue)) {
+      return [];
+    }
+
+    return parsedValue.filter((serviceId) => {
+      return Number.isInteger(serviceId) && serviceId > 0;
+    });
+  } catch {
+    return [];
+  }
+}
+
+function getProfile(profileId) {
+  if (!profileId) {
+    return null;
+  }
+
+  const profile = db
+    .prepare(`
+      SELECT
+        profile_id,
+        profile_name,
+        max_age_rating,
+        blocked_services_json,
+        is_admin
+      FROM user_profiles
+      WHERE profile_id = ?
+        AND active_flag = 1
+    `)
+    .get(profileId);
+
+  if (!profile) {
+    const error = new Error('Profile not found.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return {
+    profile_id: profile.profile_id,
+    profile_name: profile.profile_name,
+    max_age_rating: profile.max_age_rating,
+    blocked_services: parseBlockedServices(profile.blocked_services_json),
+    is_admin: Boolean(profile.is_admin),
+  };
+}
+
 function isSafeExternalLink(value) {
   return typeof value === 'string' && value.trim().startsWith('https://');
 }
@@ -239,9 +305,10 @@ function getPreferredStreamingOption(options, motnServiceId) {
   return subscriptionOption || matchingOptions[0];
 }
 
-function buildCatalogWhereClause(filters) {
+function buildCatalogWhereClause(filters, profile) {
   const conditions = [];
   const params = [];
+  const blockedServices = profile?.blocked_services || [];
 
   if (filters.search !== '') {
     conditions.push(`
@@ -262,6 +329,11 @@ function buildCatalogWhereClause(filters) {
   }
 
   if (filters.service !== '') {
+    const blockedServiceSql =
+      blockedServices.length > 0
+        ? `AND ts_filter.service_id NOT IN (${blockedServices.map(() => '?').join(', ')})`
+        : '';
+
     conditions.push(`
       EXISTS (
         SELECT 1
@@ -270,10 +342,15 @@ function buildCatalogWhereClause(filters) {
           ON ss_filter.service_id = ts_filter.service_id
         WHERE ts_filter.title_id = mt.title_id
           AND ss_filter.service_name = ?
+          ${blockedServiceSql}
       )
     `);
 
     params.push(filters.service);
+
+    if (blockedServices.length > 0) {
+      params.push(...blockedServices);
+    }
   }
 
   if (filters.genre !== '') {
@@ -289,6 +366,33 @@ function buildCatalogWhereClause(filters) {
     `);
 
     params.push(filters.genre);
+  }
+
+  if (profile) {
+    conditions.push(`
+      (
+        mt.age_rating IS NULL
+        OR mt.age_rating <= ?
+      )
+    `);
+    params.push(profile.max_age_rating);
+
+    if (profile.max_age_rating < 18) {
+      conditions.push('mt.adult_flag = 0');
+    }
+
+    if (blockedServices.length > 0) {
+      conditions.push(`
+        EXISTS (
+          SELECT 1
+          FROM title_services ts_profile
+          WHERE ts_profile.title_id = mt.title_id
+            AND ts_profile.service_id NOT IN (${blockedServices.map(() => '?').join(', ')})
+        )
+      `);
+
+      params.push(...blockedServices);
+    }
   }
 
   if (conditions.length === 0) {
@@ -547,6 +651,9 @@ router.post('/:titleId/external-links/refresh', async (req, res) => {
 
 router.get('/', (req, res) => {
   try {
+    const profileId = parseOptionalPositiveInteger(req.query.profile, 'profile');
+    const profile = getProfile(profileId);
+
     const filters = {
       search: parseSearch(req.query.search),
       service: parseService(req.query.service),
@@ -555,7 +662,7 @@ router.get('/', (req, res) => {
     };
 
     const limit = parseLimit(req.query.limit);
-    const { whereSql, params } = buildCatalogWhereClause(filters);
+    const { whereSql, params } = buildCatalogWhereClause(filters, profile);
 
     const titles = db
       .prepare(`
@@ -566,6 +673,10 @@ router.get('/', (req, res) => {
           mt.display_title,
           mt.original_title,
           mt.release_year,
+          mt.release_date,
+          mt.first_air_date,
+          mt.age_rating,
+          mt.adult_flag,
           mt.poster_path,
           mt.rating_value,
           mt.runtime_minutes,
@@ -578,30 +689,48 @@ router.get('/', (req, res) => {
       .all(...params, limit);
 
     if (titles.length === 0) {
-      return res.json({ data: [] });
-    }
+  return res.json({
+    filters,
+    profile,
+    count: 0,
+    data: [],
+  });
+}
 
     const titleIds = titles.map((title) => title.title_id);
     const placeholders = titleIds.map(() => '?').join(', ');
 
-    const serviceRows = db
-      .prepare(`
-        SELECT
-          ts.title_id,
-          ss.service_id,
-          ss.service_name,
-          ss.motn_service_id,
-          ts.official_url,
-          ts.external_url,
-          ts.external_url_source,
-          ts.external_url_synced_at
-        FROM title_services ts
-        JOIN streaming_services ss
-          ON ss.service_id = ts.service_id
-        WHERE ts.title_id IN (${placeholders})
-        ORDER BY ss.service_name ASC
-      `)
-      .all(...titleIds);
+const blockedServices = profile?.blocked_services || [];
+const serviceParams = [...titleIds];
+let blockedServicesSql = '';
+
+if (blockedServices.length > 0) {
+  blockedServicesSql = `
+    AND ts.service_id NOT IN (${blockedServices.map(() => '?').join(', ')})
+  `;
+
+  serviceParams.push(...blockedServices);
+}
+
+const serviceRows = db
+  .prepare(`
+    SELECT
+      ts.title_id,
+      ss.service_id,
+      ss.service_name,
+      ss.motn_service_id,
+      ts.official_url,
+      ts.external_url,
+      ts.external_url_source,
+      ts.external_url_synced_at
+    FROM title_services ts
+    JOIN streaming_services ss
+      ON ss.service_id = ts.service_id
+    WHERE ts.title_id IN (${placeholders})
+      ${blockedServicesSql}
+    ORDER BY ss.service_name ASC
+  `)
+  .all(...serviceParams);
 
     const genreRows = db
       .prepare(`
@@ -651,14 +780,19 @@ router.get('/', (req, res) => {
 
     res.json({
       filters,
+      profile,
       count: data.length,
       data,
     });
   } catch (error) {
-    console.error('Failed to load catalog:', error);
+    const statusCode = error.statusCode || 500;
 
-    res.status(500).json({
-      error: 'Failed to load catalog',
+    if (statusCode >= 500) {
+      console.error('Failed to load catalog:', error);
+    }
+
+    res.status(statusCode).json({
+      error: error.message || 'Failed to load catalog',
     });
   }
 });
