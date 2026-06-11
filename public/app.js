@@ -39,6 +39,61 @@ function formatRating(ratingValue) {
   return Number(ratingValue).toFixed(1);
 }
 
+function formatDate(value) {
+  if (typeof value !== 'string' || value.trim() === '') {
+    return null;
+  }
+
+  const parts = value.split('-');
+
+  if (parts.length !== 3) {
+    return null;
+  }
+
+  const [year, month, day] = parts;
+
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  return `${day}. ${month}. ${year}`;
+}
+
+function getPrimaryDate(title) {
+  if (title.media_type === 'movie') {
+    return {
+      label: 'Datum vydání',
+      value: formatDate(title.release_date),
+    };
+  }
+
+  if (title.media_type === 'tv') {
+    return {
+      label: 'První vysílání',
+      value: formatDate(title.first_air_date),
+    };
+  }
+
+  return {
+    label: 'Datum',
+    value: null,
+  };
+}
+
+function getCardDateText(title) {
+  const primaryDate = getPrimaryDate(title);
+
+  if (primaryDate.value) {
+    return primaryDate.value;
+  }
+
+  if (title.release_year) {
+    return String(title.release_year);
+  }
+
+  return 'neznámé datum';
+}
+
 function createBadge(text, secondary = false) {
   const badge = document.createElement('span');
   badge.className = secondary ? 'badge secondary' : 'badge';
@@ -204,7 +259,7 @@ function createCatalogCard(title) {
   heading.textContent = title.display_title;
 
   const meta = document.createElement('p');
-  meta.textContent = `${getTypeLabel(title.media_type)} · ${title.release_year || 'neznámý rok'}`;
+  meta.textContent = `${getTypeLabel(title.media_type)} · ${getCardDateText(title)}`;
 
   const services = document.createElement('div');
   services.className = 'badge-list';
@@ -271,6 +326,8 @@ function renderDetail(title) {
 
   const originalTitleText = title.original_title || 'Není dostupný';
   const releaseYearText = title.release_year || 'neznámý rok';
+  const primaryDate = getPrimaryDate(title);
+  const primaryDateText = primaryDate.value || 'není dostupné';
   const languageText = title.original_language || 'neznámý jazyk';
 
   const poster = createPoster(title, 'detail-poster');
@@ -295,6 +352,7 @@ function renderDetail(title) {
   content.appendChild(createInfoLine('Originální název', originalTitleText));
   content.appendChild(createInfoLine('Typ', getTypeLabel(title.media_type)));
   content.appendChild(createInfoLine('Rok', releaseYearText));
+  content.appendChild(createInfoLine(primaryDate.label, primaryDateText));
   content.appendChild(createInfoLine('Hodnocení', formatRating(title.rating_value)));
   content.appendChild(createInfoLine('Původní jazyk', languageText));
   content.appendChild(createServiceLaunchSection(services));
