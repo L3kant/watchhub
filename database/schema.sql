@@ -17,12 +17,20 @@ CREATE TABLE IF NOT EXISTS media_titles (
     display_title TEXT NOT NULL,
     original_title TEXT,
     release_year INTEGER,
+    release_date TEXT,
+    first_air_date TEXT,
+    last_air_date TEXT,
+    latest_season_air_date TEXT,
+    age_rating INTEGER CHECK (age_rating IS NULL OR (age_rating >= 0 AND age_rating <= 18)),
+    age_rating_country TEXT,
+    adult_flag INTEGER NOT NULL DEFAULT 0 CHECK (adult_flag IN (0, 1)),
     poster_path TEXT,
     rating_value REAL,
     runtime_minutes INTEGER,
     original_language TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    overview_text TEXT,
     UNIQUE (tmdb_id, media_type)
 ) STRICT;
 
