@@ -10,6 +10,13 @@ const closeTitleModalButton = document.querySelector('#closeTitleModal');
 
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w342';
 
+const PROFILE_STORAGE_KEY = 'watchhub.activeProfileId';
+
+const profileSelect = document.querySelector('#profileSelect');
+
+let profiles = [];
+let activeProfileId = null;
+
 let currentTitles = [];
 
 function getTypeLabel(type) {
@@ -360,7 +367,19 @@ async function loadTitleDetail(titleId) {
   showDetailLoading();
 
   try {
-    const response = await fetch(`/api/catalog/${titleId}`);
+    const params = new URLSearchParams();
+    const activeProfileParam = getActiveProfileParam();
+
+    if (activeProfileParam) {
+      params.set('profile', activeProfileParam);
+    }
+
+    const queryString = params.toString();
+    const detailUrl = queryString
+      ? `/api/catalog/${titleId}?${queryString}`
+      : `/api/catalog/${titleId}`;
+
+    const response = await fetch(detailUrl);
 
     if (!response.ok) {
       throw new Error(`Detail request failed with status ${response.status}`);
@@ -375,10 +394,87 @@ async function loadTitleDetail(titleId) {
   }
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+async function loadProfiles() {
+  const response = await fetch('/api/profiles');
+
+  if (!response.ok) {
+    throw new Error('Nepodařilo se načíst profily.');
+  }
+
+  const result = await response.json();
+  profiles = Array.isArray(result.data) ? result.data : [];
+
+  const savedProfileId = Number(localStorage.getItem(PROFILE_STORAGE_KEY));
+  const savedProfileExists = profiles.some((profile) => {
+    return profile.profile_id === savedProfileId;
+  });
+
+  if (savedProfileExists) {
+    activeProfileId = savedProfileId;
+  } else if (profiles.length > 0) {
+    activeProfileId = profiles[0].profile_id;
+    localStorage.setItem(PROFILE_STORAGE_KEY, String(activeProfileId));
+  } else {
+    activeProfileId = null;
+    localStorage.removeItem(PROFILE_STORAGE_KEY);
+  }
+
+  renderProfileSelect();
+}
+
+function renderProfileSelect() {
+  if (!profileSelect) {
+    return;
+  }
+
+  if (profiles.length === 0) {
+    profileSelect.innerHTML = '<option value="">Žádný profil</option>';
+    profileSelect.disabled = true;
+    return;
+  }
+
+  profileSelect.disabled = false;
+
+  profileSelect.innerHTML = profiles
+    .map((profile) => {
+      const selected = profile.profile_id === activeProfileId ? 'selected' : '';
+
+      return `
+        <option value="${profile.profile_id}" ${selected}>
+          ${escapeHtml(profile.profile_name)}
+        </option>
+      `;
+    })
+    .join('');
+}
+
+function getActiveProfileParam() {
+  if (!activeProfileId) {
+    return null;
+  }
+
+  return String(activeProfileId);
+}
+
 function buildCatalogUrl() {
   const params = new URLSearchParams();
 
   params.set('limit', '100');
+
+  const activeProfileParam = getActiveProfileParam();
+
+  if (activeProfileParam) {
+    params.set('profile', activeProfileParam);
+  }
 
   const searchValue = searchInput.value.trim();
   const selectedService = serviceFilter.value;
@@ -447,7 +543,21 @@ async function loadCatalog() {
     catalogElement.innerHTML = '<p>Zkontroluj, že běží server a endpoint /api/catalog.</p>';
   }
 }
+if (profileSelect) {
+  profileSelect.addEventListener('change', () => {
+    const selectedProfileId = Number(profileSelect.value);
 
+    if (!Number.isInteger(selectedProfileId) || selectedProfileId < 1) {
+      activeProfileId = null;
+      localStorage.removeItem(PROFILE_STORAGE_KEY);
+    } else {
+      activeProfileId = selectedProfileId;
+      localStorage.setItem(PROFILE_STORAGE_KEY, String(activeProfileId));
+    }
+
+    loadCatalog();
+  });
+}
 searchInput.addEventListener('input', loadCatalog);
 serviceFilter.addEventListener('change', loadCatalog);
 typeFilter.addEventListener('change', loadCatalog);
@@ -467,5 +577,16 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-loadCatalog();
-loadGenres();
+async function initApp() {
+  try {
+    await loadProfiles();
+    await loadGenres();
+    await loadCatalog();
+  } catch (error) {
+    console.error('Failed to initialize app:', error);
+
+    catalogStatus.textContent = 'Aplikaci se nepodařilo načíst.';
+  }
+}
+
+initApp();

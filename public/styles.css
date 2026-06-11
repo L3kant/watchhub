@@ -14,16 +14,25 @@ body.modal-open {
 }
 
 .app-header {
-  padding: 24px;
+  padding: 24px 0;
   background: #181818;
   border-bottom: 1px solid #333;
 }
 
-.app-header h1 {
+.app-header-inner {
+  width: min(1400px, calc(100% - 32px));
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.app-brand h1 {
   margin: 0 0 4px;
 }
 
-.app-header p {
+.app-brand p {
   margin: 0;
   color: #aaa;
 }
@@ -316,6 +325,28 @@ body.modal-open {
   opacity: 0.65;
 }
 
+.profile-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.profile-selector label {
+  color: #ddd;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.profile-selector select {
+  min-width: 160px;
+  padding: 10px 12px;
+  border: 1px solid #444;
+  border-radius: 8px;
+  color: #f5f5f5;
+  background: #222;
+}
+
 @media (max-width: 700px) {
   .content {
     padding: 16px;
@@ -357,6 +388,25 @@ body.modal-open {
   }
 
   .service-launch-link {
+    width: 100%;
+  }
+
+  .app-header {
+    padding: 18px 0;
+  }
+
+  .app-header-inner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .profile-selector {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .profile-selector select {
     width: 100%;
   }
 }
