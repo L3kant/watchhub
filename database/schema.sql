@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS streaming_services (
     service_id INTEGER PRIMARY KEY AUTOINCREMENT,
     service_name TEXT NOT NULL UNIQUE,
     provider_key TEXT,
+    motn_service_id TEXT,
     active_flag INTEGER NOT NULL DEFAULT 1 CHECK (active_flag IN (0, 1)),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -29,10 +30,11 @@ CREATE TABLE IF NOT EXISTS title_services (
   title_id INTEGER NOT NULL,
   service_id INTEGER NOT NULL,
   official_url TEXT,
+  external_url TEXT,
+  external_url_source TEXT,
+  external_url_synced_at TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
   PRIMARY KEY (title_id, service_id),
-
   FOREIGN KEY (title_id) REFERENCES media_titles(title_id) ON DELETE CASCADE,
   FOREIGN KEY (service_id) REFERENCES streaming_services(service_id) ON DELETE CASCADE
 ) STRICT;
