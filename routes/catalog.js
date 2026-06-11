@@ -443,6 +443,9 @@ router.get('/:titleId', (req, res) => {
   }
 
   try {
+    const profileId = parseOptionalPositiveInteger(req.query.profile, 'profile');
+    const profile = getProfile(profileId);
+
     const title = db
       .prepare(`
         SELECT
@@ -453,6 +456,13 @@ router.get('/:titleId', (req, res) => {
           original_title,
           overview_text,
           release_year,
+          release_date,
+          first_air_date,
+          last_air_date,
+          latest_season_air_date,
+          age_rating,
+          age_rating_country,
+          adult_flag,
           poster_path,
           rating_value,
           runtime_minutes,
@@ -470,7 +480,41 @@ router.get('/:titleId', (req, res) => {
       });
     }
 
-    const rawServices = db
+    if (
+      profile &&
+      title.age_rating !== null &&
+      title.age_rating > profile.max_age_rating
+    ) {
+      return res.status(403).json({
+        error: 'Title is not available for this profile.',
+        profile,
+      });
+    }
+
+    if (
+      profile &&
+      profile.max_age_rating < 18 &&
+      title.adult_flag === 1
+    ) {
+      return res.status(403).json({
+        error: 'Title is not available for this profile.',
+        profile,
+      });
+    }
+
+    const blockedServices = profile?.blocked_services || [];
+    const serviceParams = [titleId];
+    let blockedServicesSql = '';
+
+    if (blockedServices.length > 0) {
+      blockedServicesSql = `
+        AND ts.service_id NOT IN (${blockedServices.map(() => '?').join(', ')})
+      `;
+
+      serviceParams.push(...blockedServices);
+    }
+
+      const rawServices = db
       .prepare(`
         SELECT
           ss.service_id,
@@ -484,9 +528,10 @@ router.get('/:titleId', (req, res) => {
         JOIN streaming_services ss
           ON ss.service_id = ts.service_id
         WHERE ts.title_id = ?
+          ${blockedServicesSql}
         ORDER BY ss.service_name
       `)
-      .all(titleId);
+      .all(...serviceParams);
 
       const services = rawServices.map((service) => {
         return {
@@ -509,6 +554,7 @@ router.get('/:titleId', (req, res) => {
       .all(titleId);
 
     return res.json({
+      profile,
       data: {
         ...title,
         tmdb_watch_url: getTmdbWatchUrl(title),
@@ -517,10 +563,14 @@ router.get('/:titleId', (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Failed to load catalog detail:', error);
+    const statusCode = error.statusCode || 500;
 
-    return res.status(500).json({
-      error: 'Failed to load catalog detail.'
+    if (statusCode >= 500) {
+      console.error('Failed to load catalog detail:', error);
+    }
+
+    return res.status(statusCode).json({
+      error: error.message || 'Failed to load catalog detail.',
     });
   }
 });
