@@ -10,6 +10,7 @@ const subscriptionsRouter = require('./routes/subscriptions');
 const tmdbRouter = require('./routes/tmdb');
 const catalogRouter = require('./routes/catalog');
 const profilesRouter = require('./routes/profiles');
+const profileTitleStatusesRouter = require('./routes/profileTitleStatuses');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,6 +23,7 @@ app.use('/api/subscriptions', subscriptionsRouter);
 app.use('/api/tmdb', tmdbRouter);
 app.use('/api/catalog', catalogRouter);
 app.use('/api/profiles', profilesRouter);
+app.use('/api/profiles', profileTitleStatusesRouter);
 app.get('/api/health', (req, res) => {
   try {
     db.prepare('SELECT 1 AS ok').get();
