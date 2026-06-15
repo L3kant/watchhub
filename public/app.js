@@ -16,6 +16,9 @@ const refreshWatchlistButton = document.getElementById(
 );
 const watchlistStatus = document.getElementById("watchlistStatus");
 const watchlistGrid = document.getElementById("watchlistGrid");
+const refreshWatchedButton = document.getElementById("refreshWatchedButton");
+const watchedStatus = document.getElementById("watchedStatus");
+const watchedGrid = document.getElementById("watchedGrid");
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w342";
 
@@ -632,6 +635,7 @@ async function updateTitleStatus(titleId, status) {
     await loadCatalog();
     await loadNews();
     await loadWatchlist();
+    await loadWatchedList();
   } catch (error) {
     console.error("Failed to update title status:", error);
     alert(error.message || "Nepodařilo se uložit stav titulu.");
@@ -661,6 +665,7 @@ async function clearTitleStatus(titleId) {
     await loadCatalog();
     await loadNews();
     await loadWatchlist();
+    await loadWatchedList();
   } catch (error) {
     console.error("Failed to clear title status:", error);
     alert(error.message || "Nepodařilo se zrušit stav titulu.");
@@ -944,6 +949,51 @@ async function loadWatchlist() {
   }
 }
 
+async function loadWatchedList() {
+  if (!watchedGrid || !watchedStatus) {
+    return;
+  }
+
+  watchedGrid.innerHTML = "";
+
+  if (!activeProfileId) {
+    watchedStatus.textContent =
+      "Vyber profil pro zobrazení zhlédnutých titulů.";
+    return;
+  }
+
+  watchedStatus.textContent = "Načítám zhlédnuté tituly...";
+
+  try {
+    const response = await fetch(
+      `/api/profiles/${activeProfileId}/titles/statuses?status=watched`,
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Nepodařilo se načíst zhlédnuté tituly.");
+    }
+
+    const titles = Array.isArray(result.data) ? result.data : [];
+
+    if (titles.length === 0) {
+      watchedStatus.textContent = "Zatím není označený žádný zhlédnutý titul.";
+      return;
+    }
+
+    watchedStatus.textContent = "";
+
+    for (const title of titles) {
+      watchedGrid.appendChild(createCatalogCard(title));
+    }
+  } catch (error) {
+    console.error("Failed to load watched list:", error);
+    watchedStatus.textContent =
+      error.message || "Nepodařilo se načíst zhlédnuté tituly.";
+  }
+}
+
 if (profileSelect) {
   profileSelect.addEventListener("change", () => {
     const selectedProfileId = Number(profileSelect.value);
@@ -959,6 +1009,7 @@ if (profileSelect) {
     loadCatalog();
     loadNews();
     loadWatchlist();
+    loadWatchedList();
   });
 }
 
@@ -990,6 +1041,10 @@ if (refreshWatchlistButton) {
   refreshWatchlistButton.addEventListener("click", loadWatchlist);
 }
 
+if (refreshWatchedButton) {
+  refreshWatchedButton.addEventListener("click", loadWatchedList);
+}
+
 searchInput.addEventListener("input", loadCatalog);
 serviceFilter.addEventListener("change", () => {
   loadCatalog();
@@ -1018,6 +1073,7 @@ async function initApp() {
     await loadGenres();
     await loadNews();
     await loadWatchlist();
+    await loadWatchedList();
     await loadCatalog();
   } catch (error) {
     console.error("Failed to initialize app:", error);
