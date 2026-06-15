@@ -11,6 +11,7 @@ const tmdbRouter = require('./routes/tmdb');
 const catalogRouter = require('./routes/catalog');
 const profilesRouter = require('./routes/profiles');
 const profileTitleStatusesRouter = require('./routes/profileTitleStatuses');
+const adminRouter = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,6 +25,7 @@ app.use('/api/tmdb', tmdbRouter);
 app.use('/api/catalog', catalogRouter);
 app.use('/api/profiles', profilesRouter);
 app.use('/api/profiles', profileTitleStatusesRouter);
+app.use('/api/admin', adminRouter);
 app.get('/api/health', (req, res) => {
   try {
     db.prepare('SELECT 1 AS ok').get();
