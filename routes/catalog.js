@@ -433,6 +433,120 @@ router.get('/genres', (req, res) => {
   }
 });
 
+router.get('/new', (req, res) => {
+  try {
+    const profileId = parseOptionalPositiveInteger(req.query.profile, 'profile');
+    const profile = getProfile(profileId);
+
+    const service = parseService(req.query.service);
+    const mediaType = parseMediaType(req.query.type);
+    const limit = parseLimit(req.query.limit);
+
+    if (
+      req.query.type !== undefined &&
+      req.query.type !== '' &&
+      mediaType === ''
+    ) {
+      return res.status(400).json({
+        error: 'Invalid type. Use movie or tv.',
+      });
+    }
+
+    const blockedServices = profile?.blocked_services || [];
+    const conditions = ['ss.active_flag = 1'];
+    const params = [];
+
+    if (service !== '') {
+      conditions.push('(ss.service_name = ? OR CAST(ss.service_id AS TEXT) = ?)');
+      params.push(service, service);
+    }
+
+    if (mediaType !== '') {
+      conditions.push('mt.media_type = ?');
+      params.push(mediaType);
+    }
+
+    if (profile) {
+      conditions.push(`
+        (
+          mt.age_rating IS NULL
+          OR mt.age_rating <= ?
+        )
+      `);
+      params.push(profile.max_age_rating);
+
+      if (profile.max_age_rating < 18) {
+        conditions.push('COALESCE(mt.adult_flag, 0) = 0');
+      }
+
+      if (blockedServices.length > 0) {
+        conditions.push(`
+          ss.service_id NOT IN (${blockedServices.map(() => '?').join(', ')})
+        `);
+        params.push(...blockedServices);
+      }
+    }
+
+    const newsItems = db
+      .prepare(`
+        SELECT
+          mt.title_id,
+          mt.tmdb_id,
+          mt.media_type,
+          mt.display_title,
+          mt.original_title,
+          mt.release_year,
+          mt.release_date,
+          mt.first_air_date,
+          mt.last_air_date,
+          mt.latest_season_air_date,
+          mt.age_rating,
+          mt.age_rating_country,
+          mt.adult_flag,
+          mt.poster_path,
+          mt.rating_value,
+          mt.runtime_minutes,
+          mt.original_language,
+
+          ss.service_id,
+          ss.service_name,
+
+          ts.created_at AS available_since
+        FROM title_services ts
+        JOIN media_titles mt
+          ON mt.title_id = ts.title_id
+        JOIN streaming_services ss
+          ON ss.service_id = ts.service_id
+        WHERE ${conditions.join(' AND ')}
+        ORDER BY
+          datetime(ts.created_at) DESC,
+          mt.display_title COLLATE NOCASE ASC
+        LIMIT ?
+      `)
+      .all(...params, limit);
+
+    return res.json({
+      filters: {
+        service,
+        mediaType,
+      },
+      profile,
+      count: newsItems.length,
+      data: newsItems,
+    });
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+
+    if (statusCode >= 500) {
+      console.error('Failed to load new catalog items:', error);
+    }
+
+    return res.status(statusCode).json({
+      error: error.message || 'Failed to load new catalog items.',
+    });
+  }
+});
+
 router.get('/:titleId', (req, res) => {
   const titleId = Number(req.params.titleId);
 
