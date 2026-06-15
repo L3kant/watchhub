@@ -13,13 +13,17 @@ if (!fs.existsSync(dbPath)) {
 const db = new DatabaseSync(dbPath);
 
 try {
-  const tables = db.prepare(`
+  const tables = db
+    .prepare(
+      `
     SELECT name
     FROM sqlite_schema
     WHERE type = 'table'
       AND name NOT LIKE 'sqlite_%'
     ORDER BY name
-  `).all();
+  `,
+    )
+    .all();
 
   console.table(tables);
 } catch (error) {

@@ -50,7 +50,8 @@ if (allServices && serviceName) {
 function getTargetServices() {
   if (allServices) {
     const services = db
-      .prepare(`
+      .prepare(
+        `
         SELECT
           service_id,
           service_name,
@@ -60,7 +61,8 @@ function getTargetServices() {
           AND provider_key IS NOT NULL
           AND provider_key != ''
         ORDER BY service_name
-      `)
+      `,
+      )
       .all();
 
     if (services.length === 0) {
@@ -71,7 +73,8 @@ function getTargetServices() {
   }
 
   const service = db
-    .prepare(`
+    .prepare(
+      `
       SELECT
         service_id,
         service_name,
@@ -83,14 +86,15 @@ function getTargetServices() {
         AND (? IS NULL OR service_name = ?)
       ORDER BY service_name
       LIMIT 1
-    `)
+    `,
+    )
     .get(serviceName, serviceName);
 
   if (!service) {
     throw new Error(
       serviceName
         ? `Active service not found or missing provider_key: ${serviceName}`
-        : 'No active service with provider_key found.'
+        : 'No active service with provider_key found.',
     );
   }
 
@@ -217,18 +221,21 @@ function mapTmdbResultToMediaTitle(item) {
 
 function getExistingTitle(tmdbId, mediaType) {
   return db
-    .prepare(`
+    .prepare(
+      `
       SELECT title_id
       FROM media_titles
       WHERE tmdb_id = ?
         AND media_type = ?
-    `)
+    `,
+    )
     .get(tmdbId, mediaType);
 }
 
 function insertMediaTitle(title) {
   const result = db
-    .prepare(`
+    .prepare(
+      `
       INSERT INTO media_titles (
         tmdb_id,
         media_type,
@@ -245,7 +252,8 @@ function insertMediaTitle(title) {
         original_language
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
+    `,
+    )
     .run(
       title.tmdb_id,
       title.media_type,
@@ -259,14 +267,15 @@ function insertMediaTitle(title) {
       title.poster_path,
       title.rating_value,
       title.runtime_minutes,
-      title.original_language
+      title.original_language,
     );
 
   return result.lastInsertRowid;
 }
 
 function updateMediaTitle(titleId, title) {
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE media_titles
     SET
       display_title = ?,
@@ -282,7 +291,8 @@ function updateMediaTitle(titleId, title) {
       original_language = ?,
       updated_at = CURRENT_TIMESTAMP
     WHERE title_id = ?
-  `).run(
+  `,
+  ).run(
     title.display_title,
     title.original_title,
     title.overview_text,
@@ -294,7 +304,7 @@ function updateMediaTitle(titleId, title) {
     title.rating_value,
     title.runtime_minutes,
     title.original_language,
-    titleId
+    titleId,
   );
 }
 
@@ -320,25 +330,29 @@ function upsertMediaTitle(title) {
 
 function titleServiceExists(titleId, serviceId) {
   const existingLink = db
-    .prepare(`
+    .prepare(
+      `
       SELECT title_id
       FROM title_services
       WHERE title_id = ?
         AND service_id = ?
-    `)
+    `,
+    )
     .get(titleId, serviceId);
 
   return Boolean(existingLink);
 }
 
 function insertTitleService(titleId, serviceId) {
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO title_services (
       title_id,
       service_id
     )
     VALUES (?, ?)
-  `).run(titleId, serviceId);
+  `,
+  ).run(titleId, serviceId);
 }
 
 function upsertTitleService(titleId, serviceId) {
@@ -352,12 +366,14 @@ function upsertTitleService(titleId, serviceId) {
 
 function getGenreId(tmdbGenreId, mediaType) {
   const genre = db
-    .prepare(`
+    .prepare(
+      `
       SELECT genre_id
       FROM media_genres
       WHERE tmdb_genre_id = ?
         AND media_type = ?
-    `)
+    `,
+    )
     .get(tmdbGenreId, mediaType);
 
   return genre ? genre.genre_id : null;
@@ -365,25 +381,29 @@ function getGenreId(tmdbGenreId, mediaType) {
 
 function titleGenreExists(titleId, genreId) {
   const existingLink = db
-    .prepare(`
+    .prepare(
+      `
       SELECT title_id
       FROM title_genres
       WHERE title_id = ?
         AND genre_id = ?
-    `)
+    `,
+    )
     .get(titleId, genreId);
 
   return Boolean(existingLink);
 }
 
 function insertTitleGenre(titleId, genreId) {
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO title_genres (
       title_id,
       genre_id
     )
     VALUES (?, ?)
-  `).run(titleId, genreId);
+  `,
+  ).run(titleId, genreId);
 }
 
 function syncTitleGenres(titleId, genreIds, mediaType) {
@@ -418,15 +438,15 @@ function syncTitleGenres(titleId, genreIds, mediaType) {
 }
 
 function saveResults(results, service) {
-    const stats = {
-        titlesInserted: 0,
-        titlesUpdated: 0,
-        linksInserted: 0,
-        linksExisting: 0,
-        genreLinksInserted: 0,
-        genreLinksExisting: 0,
-        genreLinksSkipped: 0,
-    };
+  const stats = {
+    titlesInserted: 0,
+    titlesUpdated: 0,
+    linksInserted: 0,
+    linksExisting: 0,
+    genreLinksInserted: 0,
+    genreLinksExisting: 0,
+    genreLinksSkipped: 0,
+  };
 
   db.exec('BEGIN');
 
@@ -449,15 +469,11 @@ function saveResults(results, service) {
         stats.linksExisting += 1;
       }
 
-      const genreStats = syncTitleGenres(
-        savedTitle.titleId,
-        item.genre_ids,
-        title.media_type
-        );
+      const genreStats = syncTitleGenres(savedTitle.titleId, item.genre_ids, title.media_type);
 
-        stats.genreLinksInserted += genreStats.genreLinksInserted;
-        stats.genreLinksExisting += genreStats.genreLinksExisting;
-        stats.genreLinksSkipped += genreStats.genreLinksSkipped;
+      stats.genreLinksInserted += genreStats.genreLinksInserted;
+      stats.genreLinksExisting += genreStats.genreLinksExisting;
+      stats.genreLinksSkipped += genreStats.genreLinksSkipped;
     }
 
     db.exec('COMMIT');

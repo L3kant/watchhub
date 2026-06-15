@@ -1,6 +1,6 @@
-const express = require("express");
-const db = require("../database/db");
-const { getLocalQuotaStatus } = require("../clients/movieOfTheNightClient");
+const express = require('express');
+const db = require('../database/db');
+const { getLocalQuotaStatus } = require('../clients/movieOfTheNightClient');
 
 const router = express.Router();
 
@@ -13,10 +13,10 @@ function getCount(sql, params = []) {
   return Number(getValue(sql, params) || 0);
 }
 
-router.get("/status", (req, res) => {
+router.get('/status', (req, res) => {
   try {
     const status = {
-      status: "ok",
+      status: 'ok',
       generated_at: new Date().toISOString(),
 
       services_count: getCount(`
@@ -41,7 +41,7 @@ router.get("/status", (req, res) => {
         FROM media_titles
         WHERE media_type = ?
       `,
-        ["movie"],
+        ['movie'],
       ),
 
       series_count: getCount(
@@ -50,7 +50,7 @@ router.get("/status", (req, res) => {
         FROM media_titles
         WHERE media_type = ?
       `,
-        ["tv"],
+        ['tv'],
       ),
 
       profiles_count: getCount(`
@@ -75,7 +75,7 @@ router.get("/status", (req, res) => {
         FROM profile_title_statuses
         WHERE status = ?
       `,
-        ["planned"],
+        ['planned'],
       ),
 
       watched_count: getCount(
@@ -84,7 +84,7 @@ router.get("/status", (req, res) => {
         FROM profile_title_statuses
         WHERE status = ?
       `,
-        ["watched"],
+        ['watched'],
       ),
 
       hidden_count: getCount(
@@ -93,7 +93,7 @@ router.get("/status", (req, res) => {
         FROM profile_title_statuses
         WHERE status = ?
       `,
-        ["hidden"],
+        ['hidden'],
       ),
 
       external_links_count: getCount(`
@@ -116,15 +116,15 @@ router.get("/status", (req, res) => {
 
     res.json({ data: status });
   } catch (error) {
-    console.error("Failed to load admin status:", error);
+    console.error('Failed to load admin status:', error);
 
     res.status(500).json({
-      error: "Failed to load admin status",
+      error: 'Failed to load admin status',
     });
   }
 });
 
-router.get("/services", (req, res) => {
+router.get('/services', (req, res) => {
   try {
     const rows = db
       .prepare(
@@ -210,15 +210,15 @@ router.get("/services", (req, res) => {
 
     res.json({ data: services });
   } catch (error) {
-    console.error("Failed to load admin services:", error);
+    console.error('Failed to load admin services:', error);
 
     res.status(500).json({
-      error: "Failed to load admin services",
+      error: 'Failed to load admin services',
     });
   }
 });
 
-router.get("/external-links", (req, res) => {
+router.get('/external-links', (req, res) => {
   try {
     const summary = db
       .prepare(
@@ -350,9 +350,7 @@ router.get("/external-links", (req, res) => {
         summary: {
           title_services_count: Number(summary.title_services_count || 0),
           external_links_count: Number(summary.external_links_count || 0),
-          missing_external_links_count: Number(
-            summary.missing_external_links_count || 0,
-          ),
+          missing_external_links_count: Number(summary.missing_external_links_count || 0),
           oldest_external_url_synced_at: summary.oldest_external_url_synced_at,
           latest_external_url_synced_at: summary.latest_external_url_synced_at,
         },
@@ -363,9 +361,7 @@ router.get("/external-links", (req, res) => {
           motn_service_id: row.motn_service_id,
           title_services_count: Number(row.title_services_count || 0),
           external_links_count: Number(row.external_links_count || 0),
-          missing_external_links_count: Number(
-            row.missing_external_links_count || 0,
-          ),
+          missing_external_links_count: Number(row.missing_external_links_count || 0),
           oldest_external_url_synced_at: row.oldest_external_url_synced_at,
           latest_external_url_synced_at: row.latest_external_url_synced_at,
         })),
@@ -389,10 +385,10 @@ router.get("/external-links", (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Failed to load admin external links:", error);
+    console.error('Failed to load admin external links:', error);
 
     res.status(500).json({
-      error: "Failed to load admin external links",
+      error: 'Failed to load admin external links',
     });
   }
 });
@@ -412,12 +408,12 @@ function parseBlockedServices(value) {
     return parsed
       .map((serviceId) => Number(serviceId))
       .filter((serviceId) => Number.isInteger(serviceId) && serviceId > 0);
-  } catch (error) {
+  } catch {
     return [];
   }
 }
 
-router.get("/profiles", (req, res) => {
+router.get('/profiles', (req, res) => {
   try {
     const rows = db
       .prepare(
@@ -519,29 +515,29 @@ router.get("/profiles", (req, res) => {
 
     res.json({ data: profiles });
   } catch (error) {
-    console.error("Failed to load admin profiles:", error);
+    console.error('Failed to load admin profiles:', error);
 
     res.status(500).json({
-      error: "Failed to load admin profiles",
+      error: 'Failed to load admin profiles',
     });
   }
 });
 
-router.get("/movie-of-the-night/quota", (req, res) => {
+router.get('/movie-of-the-night/quota', (req, res) => {
   try {
     const quota = getLocalQuotaStatus();
 
     res.json({
       data: {
-        provider: "movie_of_the_night",
+        provider: 'movie_of_the_night',
         quota,
       },
     });
   } catch (error) {
-    console.error("Failed to load Movie of the Night quota:", error);
+    console.error('Failed to load Movie of the Night quota:', error);
 
     res.status(500).json({
-      error: "Failed to load Movie of the Night quota",
+      error: 'Failed to load Movie of the Night quota',
     });
   }
 });
@@ -549,7 +545,8 @@ router.get("/movie-of-the-night/quota", (req, res) => {
 router.get('/catalog-quality', (req, res) => {
   try {
     const summary = db
-      .prepare(`
+      .prepare(
+        `
         SELECT
           COUNT(*) AS titles_count,
 
@@ -654,11 +651,13 @@ router.get('/catalog-quality', (req, res) => {
           MAX(updated_at) AS latest_title_updated_at
 
         FROM media_titles
-      `)
+      `,
+      )
       .get();
 
     const missingGenres = db
-      .prepare(`
+      .prepare(
+        `
         SELECT COUNT(*) AS value
         FROM media_titles mt
         WHERE NOT EXISTS (
@@ -666,11 +665,13 @@ router.get('/catalog-quality', (req, res) => {
           FROM title_genres tg
           WHERE tg.title_id = mt.title_id
         )
-      `)
+      `,
+      )
       .get();
 
     const missingServices = db
-      .prepare(`
+      .prepare(
+        `
         SELECT COUNT(*) AS value
         FROM media_titles mt
         WHERE NOT EXISTS (
@@ -678,11 +679,13 @@ router.get('/catalog-quality', (req, res) => {
           FROM title_services ts
           WHERE ts.title_id = mt.title_id
         )
-      `)
+      `,
+      )
       .get();
 
     const byTypeRows = db
-      .prepare(`
+      .prepare(
+        `
         SELECT
           media_type,
           COUNT(*) AS titles_count,
@@ -713,11 +716,13 @@ router.get('/catalog-quality', (req, res) => {
         FROM media_titles
         GROUP BY media_type
         ORDER BY media_type ASC
-      `)
+      `,
+      )
       .all();
 
     const recentTitlesRows = db
-      .prepare(`
+      .prepare(
+        `
         SELECT
           title_id,
           display_title,
@@ -735,7 +740,8 @@ router.get('/catalog-quality', (req, res) => {
 
         ORDER BY datetime(updated_at) DESC
         LIMIT 10
-      `)
+      `,
+      )
       .all();
 
     res.json({
@@ -746,18 +752,14 @@ router.get('/catalog-quality', (req, res) => {
           series_count: Number(summary.series_count || 0),
           missing_poster_count: Number(summary.missing_poster_count || 0),
           missing_overview_count: Number(summary.missing_overview_count || 0),
-          missing_movie_release_date_count: Number(
-            summary.missing_movie_release_date_count || 0,
-          ),
+          missing_movie_release_date_count: Number(summary.missing_movie_release_date_count || 0),
           missing_series_first_air_date_count: Number(
             summary.missing_series_first_air_date_count || 0,
           ),
           missing_runtime_count: Number(summary.missing_runtime_count || 0),
           missing_language_count: Number(summary.missing_language_count || 0),
           missing_rating_count: Number(summary.missing_rating_count || 0),
-          missing_age_rating_count: Number(
-            summary.missing_age_rating_count || 0,
-          ),
+          missing_age_rating_count: Number(summary.missing_age_rating_count || 0),
           missing_genres_count: Number(missingGenres.value || 0),
           missing_services_count: Number(missingServices.value || 0),
           adult_titles_count: Number(summary.adult_titles_count || 0),

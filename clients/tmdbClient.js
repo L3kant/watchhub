@@ -39,7 +39,7 @@ async function tmdbGet(pathname, query = {}) {
 
   const text = await response.text();
 
-  let data = null;
+  let data;
 
   try {
     data = text ? JSON.parse(text) : null;
@@ -50,7 +50,9 @@ async function tmdbGet(pathname, query = {}) {
   }
 
   if (!response.ok) {
-    const error = new Error(data?.status_message || `TMDb request failed with status ${response.status}`);
+    const error = new Error(
+      data?.status_message || `TMDb request failed with status ${response.status}`,
+    );
     error.statusCode = response.status;
     error.tmdbResponse = data;
     throw error;

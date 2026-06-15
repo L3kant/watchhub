@@ -140,7 +140,8 @@ function findMatchedProviders(providers) {
 
     const existingMatch = matchesByTargetKey.get(targetProvider.key);
     const isExactCanonicalName =
-      normalizeProviderName(provider.provider_name) === normalizeProviderName(targetProvider.serviceName);
+      normalizeProviderName(provider.provider_name) ===
+      normalizeProviderName(targetProvider.serviceName);
 
     const score = isExactCanonicalName ? 2 : 1;
 
@@ -165,7 +166,7 @@ function syncProvider(targetProvider, provider) {
   const existingService = findServiceStatement.get(
     providerKey,
     targetProvider.serviceName,
-    provider.provider_name
+    provider.provider_name,
   );
 
   if (existingService) {
@@ -228,9 +229,7 @@ async function main() {
     console.warn('No target providers were matched from TMDb response.');
   }
 
-  const syncedTargetKeys = new Set(
-    matchedProviders.map((match) => match.targetProvider.key)
-  );
+  const syncedTargetKeys = new Set(matchedProviders.map((match) => match.targetProvider.key));
 
   const missingProviders = TARGET_PROVIDERS.filter((targetProvider) => {
     return !syncedTargetKeys.has(targetProvider.key);
@@ -240,7 +239,7 @@ async function main() {
     console.warn(
       `Missing target providers in TMDb region ${WATCH_REGION}: ${missingProviders
         .map((provider) => provider.serviceName)
-        .join(', ')}`
+        .join(', ')}`,
     );
   }
 }

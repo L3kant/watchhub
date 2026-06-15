@@ -8,9 +8,7 @@ const OUTPUT_FILE = path.join(OUTPUT_DIR, 'watchhub-code-export.txt');
 
 const MAX_FILE_SIZE_BYTES = 1024 * 1024;
 
-const SKIPPED_EXACT_FILES = new Set([
-  'package-lock.json',
-]);
+const SKIPPED_EXACT_FILES = new Set(['package-lock.json']);
 
 const SKIPPED_EXTENSIONS = new Set([
   '.sqlite',
@@ -27,14 +25,10 @@ const SKIPPED_EXTENSIONS = new Set([
 ]);
 
 function getGitFiles() {
-  const output = execFileSync(
-    'git',
-    ['ls-files'],
-    {
-      cwd: PROJECT_ROOT,
-      encoding: 'utf8',
-    },
-  );
+  const output = execFileSync('git', ['ls-files'], {
+    cwd: PROJECT_ROOT,
+    encoding: 'utf8',
+  });
 
   return output
     .split('\n')

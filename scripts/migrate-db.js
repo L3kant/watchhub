@@ -17,11 +17,15 @@ const migrationFiles = fs
   .sort();
 
 for (const fileName of migrationFiles) {
-  const alreadyExecuted = db.prepare(`
+  const alreadyExecuted = db
+    .prepare(
+      `
     SELECT migration_name
     FROM schema_migrations
     WHERE migration_name = ?
-  `).get(fileName);
+  `,
+    )
+    .get(fileName);
 
   if (alreadyExecuted) {
     console.log(`Skipped: ${fileName}`);
@@ -35,10 +39,12 @@ for (const fileName of migrationFiles) {
     db.exec('BEGIN');
     db.exec(sql);
 
-    db.prepare(`
+    db.prepare(
+      `
       INSERT INTO schema_migrations (migration_name)
       VALUES (?)
-    `).run(fileName);
+    `,
+    ).run(fileName);
 
     db.exec('COMMIT');
 

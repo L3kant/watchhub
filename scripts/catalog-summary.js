@@ -2,14 +2,16 @@ const db = require('../database/db');
 
 function printTitleCounts() {
   const rows = db
-    .prepare(`
+    .prepare(
+      `
       SELECT
         media_type,
         COUNT(*) AS count
       FROM media_titles
       GROUP BY media_type
       ORDER BY media_type
-    `)
+    `,
+    )
     .all();
 
   console.log('');
@@ -19,7 +21,8 @@ function printTitleCounts() {
 
 function printServiceCounts() {
   const rows = db
-    .prepare(`
+    .prepare(
+      `
       SELECT
         s.service_name,
         mt.media_type,
@@ -35,7 +38,8 @@ function printServiceCounts() {
       ORDER BY
         s.service_name,
         mt.media_type
-    `)
+    `,
+    )
     .all();
 
   console.log('');
@@ -45,14 +49,16 @@ function printServiceCounts() {
 
 function printGenreCounts() {
   const rows = db
-    .prepare(`
+    .prepare(
+      `
       SELECT
         media_type,
         COUNT(*) AS count
       FROM media_genres
       GROUP BY media_type
       ORDER BY media_type
-    `)
+    `,
+    )
     .all();
 
   console.log('');
@@ -62,7 +68,8 @@ function printGenreCounts() {
 
 function printTopGenres() {
   const rows = db
-    .prepare(`
+    .prepare(
+      `
       SELECT
         mg.media_type,
         mg.genre_name,
@@ -78,7 +85,8 @@ function printTopGenres() {
         mg.media_type,
         mg.genre_name
       LIMIT 30
-    `)
+    `,
+    )
     .all();
 
   console.log('');
@@ -88,7 +96,8 @@ function printTopGenres() {
 
 function printMultiServiceTitles() {
   const rows = db
-    .prepare(`
+    .prepare(
+      `
       SELECT
         mt.title_id,
         mt.display_title,
@@ -109,7 +118,8 @@ function printMultiServiceTitles() {
         service_count DESC,
         mt.display_title
       LIMIT 30
-    `)
+    `,
+    )
     .all();
 
   console.log('');

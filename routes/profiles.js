@@ -79,16 +79,16 @@ function validateServicesExist(serviceIds) {
   const placeholders = serviceIds.map(() => '?').join(', ');
 
   const existingServices = db
-    .prepare(`
+    .prepare(
+      `
       SELECT service_id
       FROM streaming_services
       WHERE service_id IN (${placeholders})
-    `)
+    `,
+    )
     .all(...serviceIds);
 
-  const existingServiceIds = new Set(
-    existingServices.map((service) => service.service_id)
-  );
+  const existingServiceIds = new Set(existingServices.map((service) => service.service_id));
 
   const missingServiceIds = serviceIds.filter((serviceId) => {
     return !existingServiceIds.has(serviceId);
@@ -103,7 +103,8 @@ function validateServicesExist(serviceIds) {
 
 function getProfileById(profileId) {
   const profile = db
-    .prepare(`
+    .prepare(
+      `
       SELECT
         profile_id,
         profile_name,
@@ -117,7 +118,8 @@ function getProfileById(profileId) {
         updated_at
       FROM user_profiles
       WHERE profile_id = ?
-    `)
+    `,
+    )
     .get(profileId);
 
   if (!profile) {
@@ -145,7 +147,8 @@ function mapProfile(profile) {
 router.get('/', (req, res) => {
   try {
     const profiles = db
-      .prepare(`
+      .prepare(
+        `
         SELECT
           profile_id,
           profile_name,
@@ -160,7 +163,8 @@ router.get('/', (req, res) => {
         FROM user_profiles
         WHERE active_flag = 1
         ORDER BY profile_name
-      `)
+      `,
+      )
       .all();
 
     const data = profiles.map(mapProfile);
@@ -220,12 +224,14 @@ function parseOptionalBooleanFlag(value, fieldName) {
 
 function assertProfileNameAvailable(profileName, currentProfileId) {
   const existingProfile = db
-    .prepare(`
+    .prepare(
+      `
       SELECT profile_id
       FROM user_profiles
       WHERE profile_name = ?
         AND profile_id != ?
-    `)
+    `,
+    )
     .get(profileName, currentProfileId);
 
   if (existingProfile) {
@@ -281,15 +287,10 @@ router.patch('/:profileId', (req, res) => {
         ? currentProfile.color_key
         : normalizeOptionalKey(req.body.color_key, currentProfile.color_key || 'blue');
 
-    const parsedActiveFlag = parseOptionalBooleanFlag(
-      req.body.active_flag,
-      'active_flag'
-    );
+    const parsedActiveFlag = parseOptionalBooleanFlag(req.body.active_flag, 'active_flag');
 
     const nextActiveFlag =
-      parsedActiveFlag === undefined
-        ? Number(currentProfile.active_flag)
-        : parsedActiveFlag;
+      parsedActiveFlag === undefined ? Number(currentProfile.active_flag) : parsedActiveFlag;
 
     if (currentProfile.is_admin && nextActiveFlag === 0) {
       return res.status(400).json({
@@ -297,7 +298,8 @@ router.patch('/:profileId', (req, res) => {
       });
     }
 
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE user_profiles
       SET
         profile_name = ?,
@@ -308,14 +310,15 @@ router.patch('/:profileId', (req, res) => {
         active_flag = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE profile_id = ?
-    `).run(
+    `,
+    ).run(
       nextProfileName,
       nextMaxAgeRating,
       JSON.stringify(nextBlockedServices),
       nextAvatarKey,
       nextColorKey,
       nextActiveFlag,
-      profileId
+      profileId,
     );
 
     const updatedProfile = getProfileById(profileId);
@@ -353,13 +356,15 @@ router.delete('/:profileId', (req, res) => {
       });
     }
 
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE user_profiles
       SET
         active_flag = 0,
         updated_at = CURRENT_TIMESTAMP
       WHERE profile_id = ?
-    `).run(profileId);
+    `,
+    ).run(profileId);
 
     const updatedProfile = getProfileById(profileId);
 
@@ -390,11 +395,13 @@ router.post('/', (req, res) => {
     }
 
     const existingProfile = db
-      .prepare(`
+      .prepare(
+        `
         SELECT profile_id
         FROM user_profiles
         WHERE profile_name = ?
-      `)
+      `,
+      )
       .get(profileName);
 
     if (existingProfile) {
@@ -412,7 +419,8 @@ router.post('/', (req, res) => {
     const colorKey = normalizeOptionalKey(req.body.color_key, 'blue');
 
     const result = db
-      .prepare(`
+      .prepare(
+        `
         INSERT INTO user_profiles (
           profile_name,
           max_age_rating,
@@ -423,14 +431,9 @@ router.post('/', (req, res) => {
           active_flag
         )
         VALUES (?, ?, ?, 0, ?, ?, 1)
-      `)
-      .run(
-        profileName,
-        maxAgeRating,
-        JSON.stringify(blockedServices),
-        avatarKey,
-        colorKey
-      );
+      `,
+      )
+      .run(profileName, maxAgeRating, JSON.stringify(blockedServices), avatarKey, colorKey);
 
     const createdProfile = getProfileById(result.lastInsertRowid);
 

@@ -39,13 +39,9 @@ function getMonthlyQuotaLimit() {
 }
 
 function getCurrentQuotaPeriod(now = new Date()) {
-  const periodStart = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0)
-  );
+  const periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
 
-  const nextReset = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0)
-  );
+  const nextReset = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0));
 
   return {
     period_start_at: periodStart.toISOString(),
@@ -54,7 +50,8 @@ function getCurrentQuotaPeriod(now = new Date()) {
 }
 
 function recordMotnApiUsage({ endpoint, statusCode = null, success = false, errorMessage = null }) {
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO motn_api_usage (
       endpoint,
       status_code,
@@ -62,12 +59,8 @@ function recordMotnApiUsage({ endpoint, statusCode = null, success = false, erro
       error_message
     )
     VALUES (?, ?, ?, ?)
-  `).run(
-    endpoint,
-    statusCode,
-    success ? 1 : 0,
-    errorMessage
-  );
+  `,
+  ).run(endpoint, statusCode, success ? 1 : 0, errorMessage);
 }
 
 function getLocalQuotaStatus() {
@@ -75,12 +68,14 @@ function getLocalQuotaStatus() {
   const period = getCurrentQuotaPeriod();
 
   const row = db
-    .prepare(`
+    .prepare(
+      `
       SELECT COUNT(*) AS used
       FROM motn_api_usage
       WHERE datetime(created_at) >= datetime(?)
         AND datetime(created_at) < datetime(?)
-    `)
+    `,
+    )
     .get(period.period_start_at, period.next_reset_at);
 
   const used = Number(row.used || 0);
@@ -111,36 +106,36 @@ async function fetchShowByTmdbId({ mediaType, tmdbId, country = 'cz' }) {
 
   let response;
 
-const usageEndpoint = `/shows/${motnMediaType}/${tmdbId}`;
+  const usageEndpoint = `/shows/${motnMediaType}/${tmdbId}`;
 
-try {
-  response = await fetch(url, {
-    headers: {
-      'X-API-Key': apiKey,
-      Accept: 'application/json',
-    },
-  });
+  try {
+    response = await fetch(url, {
+      headers: {
+        'X-API-Key': apiKey,
+        Accept: 'application/json',
+      },
+    });
 
-  recordMotnApiUsage({
-    endpoint: usageEndpoint,
-    statusCode: response.status,
-    success: response.ok,
-  });
-} catch (error) {
-  recordMotnApiUsage({
-    endpoint: usageEndpoint,
-    success: false,
-    errorMessage: error.message,
-  });
+    recordMotnApiUsage({
+      endpoint: usageEndpoint,
+      statusCode: response.status,
+      success: response.ok,
+    });
+  } catch (error) {
+    recordMotnApiUsage({
+      endpoint: usageEndpoint,
+      success: false,
+      errorMessage: error.message,
+    });
 
-  throw error;
-}
+    throw error;
+  }
 
   if (!response.ok) {
     const responseText = await response.text();
 
     throw new Error(
-      `Movie of the Night request failed with status ${response.status}: ${responseText}`
+      `Movie of the Night request failed with status ${response.status}: ${responseText}`,
     );
   }
 

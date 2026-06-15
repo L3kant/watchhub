@@ -17,22 +17,26 @@ function parsePositiveInteger(value) {
 
 function getActiveProfile(profileId) {
   return db
-    .prepare(`
+    .prepare(
+      `
       SELECT profile_id
       FROM user_profiles
       WHERE profile_id = ?
         AND active_flag = 1
-    `)
+    `,
+    )
     .get(profileId);
 }
 
 function getTitle(titleId) {
   return db
-    .prepare(`
+    .prepare(
+      `
       SELECT title_id
       FROM media_titles
       WHERE title_id = ?
-    `)
+    `,
+    )
     .get(titleId);
 }
 
@@ -70,7 +74,8 @@ router.get('/:profileId/titles/statuses', (req, res) => {
   }
 
   const titles = db
-    .prepare(`
+    .prepare(
+      `
       SELECT
         pts.profile_id,
         pts.title_id,
@@ -98,7 +103,8 @@ router.get('/:profileId/titles/statuses', (req, res) => {
       ORDER BY
         datetime(pts.updated_at) DESC,
         mt.display_title COLLATE NOCASE ASC
-    `)
+    `,
+    )
     .all(...params);
 
   return res.json({
@@ -146,7 +152,8 @@ router.put('/:profileId/titles/:titleId/status', (req, res) => {
   }
 
   const result = db
-    .prepare(`
+    .prepare(
+      `
       INSERT INTO profile_title_statuses (
         profile_id,
         title_id,
@@ -158,7 +165,8 @@ router.put('/:profileId/titles/:titleId/status', (req, res) => {
       ON CONFLICT(profile_id, title_id) DO UPDATE SET
         status = excluded.status,
         updated_at = CURRENT_TIMESTAMP
-    `)
+    `,
+    )
     .run(profileId, titleId, status);
 
   return res.json({
@@ -182,11 +190,13 @@ router.delete('/:profileId/titles/:titleId/status', (req, res) => {
   }
 
   const result = db
-    .prepare(`
+    .prepare(
+      `
       DELETE FROM profile_title_statuses
       WHERE profile_id = ?
         AND title_id = ?
-    `)
+    `,
+    )
     .run(profileId, titleId);
 
   return res.json({

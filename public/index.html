@@ -1,345 +1,343 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WatchHub</title>
 
-  <title>WatchHub</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
 
-  <link rel="stylesheet" href="styles.css" />
-</head>
+  <body>
+    <header class="app-header">
+      <div class="app-header-inner">
+        <div class="app-brand">
+          <h1>WatchHub</h1>
+          <p>Soukromý katalog streamovacích služeb</p>
+        </div>
 
-<body>
-  <header class="app-header">
-    <div class="app-header-inner">
-      <div class="app-brand">
-        <h1>WatchHub</h1>
-        <p>Soukromý katalog streamovacích služeb</p>
+        <div class="profile-selector">
+          <label for="profileSelect">Profil</label>
+          <select id="profileSelect">
+            <option value="">Načítám profily...</option>
+          </select>
+        </div>
       </div>
+    </header>
 
-      <div class="profile-selector">
-        <label for="profileSelect">Profil</label>
-        <select id="profileSelect">
-          <option value="">Načítám profily...</option>
-        </select>
-      </div>
+    <main class="app-layout">
+      <section class="content">
+        <section class="filters">
+          <input id="searchInput" type="search" placeholder="Hledat podle názvu..." />
+
+          <select id="serviceFilter">
+            <option value="">Všechny služby</option>
+            <option value="Netflix">Netflix</option>
+            <option value="Disney+">Disney+</option>
+            <option value="Max">Max</option>
+            <option value="SkyShowtime">SkyShowtime</option>
+          </select>
+
+          <select id="typeFilter">
+            <option value="">Filmy i seriály</option>
+            <option value="movie">Filmy</option>
+            <option value="tv">Seriály</option>
+          </select>
+
+          <select id="genreFilter">
+            <option value="">Všechny žánry</option>
+          </select>
+        </section>
+
+        <section class="section admin-section">
+          <div class="section-header">
+            <div>
+              <h2>Admin</h2>
+              <p class="section-description">
+                Základní diagnostika databáze, katalogu a Movie of the Night limitu.
+              </p>
+            </div>
+
+            <button id="refreshAdminButton" class="secondary-button" type="button">
+              Obnovit admin přehled
+            </button>
+          </div>
+
+          <div id="adminStatusMessage" class="muted-text">Admin přehled zatím není načtený.</div>
+
+          <div id="adminStatusGrid" class="admin-grid"></div>
+          <div class="admin-table-section">
+            <h3>Streamovací služby</h3>
+
+            <div id="adminServicesMessage" class="muted-text">
+              Přehled služeb zatím není načtený.
+            </div>
+
+            <div class="admin-table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Služba</th>
+                    <th>Stav</th>
+                    <th>Tituly</th>
+                    <th>Filmy</th>
+                    <th>Seriály</th>
+                    <th>Externí odkazy</th>
+                    <th>Poslední sync odkazů</th>
+                  </tr>
+                </thead>
+                <tbody id="adminServicesTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="admin-table-section">
+            <h3>Profily</h3>
+
+            <div id="adminProfilesMessage" class="muted-text">
+              Přehled profilů zatím není načtený.
+            </div>
+            <form id="createProfileForm" class="admin-form">
+              <h4>Vytvořit profil</h4>
+
+              <div class="admin-form-grid">
+                <label>
+                  Název profilu
+                  <input
+                    id="createProfileName"
+                    type="text"
+                    maxlength="80"
+                    placeholder="Např. Děti"
+                    required
+                  />
+                </label>
+
+                <label>
+                  Věkový limit
+                  <select id="createProfileAge" required>
+                    <option value="18">Dospělý 18+</option>
+                    <option value="15">Teen 15+</option>
+                    <option value="12">Rodina 12+</option>
+                    <option value="7">Děti 7+</option>
+                  </select>
+                </label>
+
+                <label>
+                  Barva
+                  <select id="createProfileColor">
+                    <option value="blue">Modrá</option>
+                    <option value="green">Zelená</option>
+                    <option value="yellow">Žlutá</option>
+                    <option value="red">Červená</option>
+                    <option value="purple">Fialová</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="admin-form-actions">
+                <button class="secondary-button" type="submit">Vytvořit profil</button>
+
+                <span id="createProfileMessage" class="muted-text"></span>
+              </div>
+            </form>
+            <div class="admin-table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Profil</th>
+                    <th>Stav</th>
+                    <th>Věkový limit</th>
+                    <th>Blokované služby</th>
+                    <th>Můj seznam</th>
+                    <th>Zhlédnuto</th>
+                    <th>Skryto</th>
+                    <th>Celkem statusů</th>
+                  </tr>
+                </thead>
+                <tbody id="adminProfilesTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="admin-table-section">
+            <h3>Externí odkazy</h3>
+
+            <div id="adminExternalLinksMessage" class="muted-text">
+              Přehled externích odkazů zatím není načtený.
+            </div>
+
+            <div id="adminExternalLinksSummary" class="admin-grid admin-compact-grid"></div>
+
+            <h4 class="admin-subheading">Podle služby</h4>
+
+            <div class="admin-table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Služba</th>
+                    <th>Vazby titul/služba</th>
+                    <th>Externí odkazy</th>
+                    <th>Chybí odkazy</th>
+                    <th>Poslední sync</th>
+                  </tr>
+                </thead>
+                <tbody id="adminExternalLinksServiceTableBody"></tbody>
+              </table>
+            </div>
+
+            <h4 class="admin-subheading">Poslední aktualizované odkazy</h4>
+
+            <div class="admin-table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Titul</th>
+                    <th>Typ</th>
+                    <th>Služba</th>
+                    <th>Zdroj</th>
+                    <th>Sync</th>
+                  </tr>
+                </thead>
+                <tbody id="adminExternalLinksRecentTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="admin-table-section">
+            <h3>Kvalita katalogu</h3>
+
+            <div id="adminCatalogQualityMessage" class="muted-text">
+              Přehled kvality katalogu zatím není načtený.
+            </div>
+
+            <div id="adminCatalogQualitySummary" class="admin-grid admin-compact-grid"></div>
+
+            <h4 class="admin-subheading">Podle typu</h4>
+
+            <div class="admin-table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Typ</th>
+                    <th>Tituly</th>
+                    <th>Chybí plakát</th>
+                    <th>Chybí popis</th>
+                    <th>Chybí délka</th>
+                  </tr>
+                </thead>
+                <tbody id="adminCatalogQualityTypeTableBody"></tbody>
+              </table>
+            </div>
+
+            <h4 class="admin-subheading">Poslední aktualizované tituly</h4>
+
+            <div class="admin-table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Titul</th>
+                    <th>Typ</th>
+                    <th>Plakát</th>
+                    <th>Popis</th>
+                    <th>Délka</th>
+                    <th>Jazyk</th>
+                    <th>Hodnocení</th>
+                    <th>Aktualizováno</th>
+                  </tr>
+                </thead>
+                <tbody id="adminCatalogQualityRecentTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="news-section">
+          <div class="section-header">
+            <div>
+              <h2>Novinky</h2>
+              <p>Nově dostupné a nově vydané tituly.</p>
+            </div>
+
+            <button id="refreshNewsButton" type="button">Obnovit novinky</button>
+          </div>
+
+          <div class="news-tabs" role="tablist" aria-label="Typ novinek">
+            <button class="news-tab is-active" type="button" data-news-endpoint="/api/catalog/new">
+              Nově dostupné
+            </button>
+
+            <button class="news-tab" type="button" data-news-endpoint="/api/catalog/new-movies">
+              Nové filmy
+            </button>
+
+            <button class="news-tab" type="button" data-news-endpoint="/api/catalog/new-series">
+              Nové seriály
+            </button>
+          </div>
+
+          <p id="newsStatus" class="catalog-status">Načítám novinky...</p>
+          <div id="newsGrid" class="catalog"></div>
+        </section>
+
+        <section class="watchlist-section">
+          <div class="section-header">
+            <div>
+              <h2>Můj seznam</h2>
+              <p>Tituly označené jako Chci vidět.</p>
+            </div>
+
+            <button id="refreshWatchlistButton" type="button">Obnovit můj seznam</button>
+          </div>
+
+          <p id="watchlistStatus" class="catalog-status">Načítám můj seznam...</p>
+          <div id="watchlistGrid" class="catalog"></div>
+        </section>
+
+        <section class="watched-section">
+          <div class="section-header">
+            <div>
+              <h2>Zhlédnuto</h2>
+              <p>Tituly označené jako Zhlédnuto.</p>
+            </div>
+
+            <button id="refreshWatchedButton" type="button">Obnovit zhlédnuté</button>
+          </div>
+
+          <p id="watchedStatus" class="catalog-status">Načítám zhlédnuté tituly...</p>
+          <div id="watchedGrid" class="catalog"></div>
+        </section>
+
+        <section>
+          <h2>Katalog</h2>
+          <p id="catalogStatus" class="catalog-status">Načítám katalog...</p>
+          <div id="catalog" class="catalog"></div>
+        </section>
+      </section>
+    </main>
+
+    <div id="titleModal" class="modal" hidden>
+      <div class="modal-backdrop" data-modal-close></div>
+
+      <section class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <button
+          id="closeTitleModal"
+          class="modal-close"
+          type="button"
+          aria-label="Zavřít detail titulu"
+        >
+          ×
+        </button>
+
+        <div id="titleDetail" class="title-detail">
+          <h2 id="modalTitle">Detail titulu</h2>
+          <p>Načítám detail...</p>
+        </div>
+      </section>
     </div>
-  </header>
 
-  <main class="app-layout">
-    <section class="content">
-      <section class="filters">
-        <input id="searchInput" type="search" placeholder="Hledat podle názvu..." />
+    <footer class="app-footer">
+      <p>This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+    </footer>
 
-        <select id="serviceFilter">
-          <option value="">Všechny služby</option>
-          <option value="Netflix">Netflix</option>
-          <option value="Disney+">Disney+</option>
-          <option value="Max">Max</option>
-          <option value="SkyShowtime">SkyShowtime</option>
-        </select>
-
-        <select id="typeFilter">
-          <option value="">Filmy i seriály</option>
-          <option value="movie">Filmy</option>
-          <option value="tv">Seriály</option>
-        </select>
-
-        <select id="genreFilter">
-          <option value="">Všechny žánry</option>
-        </select>
-      </section>
-
-      <section class="section admin-section">
-        <div class="section-header">
-          <div>
-            <h2>Admin</h2>
-            <p class="section-description">
-              Základní diagnostika databáze, katalogu a Movie of the Night limitu.
-            </p>
-          </div>
-
-          <button id="refreshAdminButton" class="secondary-button" type="button">
-            Obnovit admin přehled
-          </button>
-        </div>
-
-        <div id="adminStatusMessage" class="muted-text">
-          Admin přehled zatím není načtený.
-        </div>
-
-        <div id="adminStatusGrid" class="admin-grid"></div>
-        <div class="admin-table-section">
-          <h3>Streamovací služby</h3>
-
-          <div id="adminServicesMessage" class="muted-text">
-            Přehled služeb zatím není načtený.
-          </div>
-
-          <div class="admin-table-wrapper">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Služba</th>
-                  <th>Stav</th>
-                  <th>Tituly</th>
-                  <th>Filmy</th>
-                  <th>Seriály</th>
-                  <th>Externí odkazy</th>
-                  <th>Poslední sync odkazů</th>
-                </tr>
-              </thead>
-              <tbody id="adminServicesTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-        <div class="admin-table-section">
-          <h3>Profily</h3>
-
-          <div id="adminProfilesMessage" class="muted-text">
-            Přehled profilů zatím není načtený.
-          </div>
-          <form id="createProfileForm" class="admin-form">
-            <h4>Vytvořit profil</h4>
-
-            <div class="admin-form-grid">
-              <label>
-                Název profilu
-                <input id="createProfileName" type="text" maxlength="80" placeholder="Např. Děti" required />
-              </label>
-
-              <label>
-                Věkový limit
-                <select id="createProfileAge" required>
-                  <option value="18">Dospělý 18+</option>
-                  <option value="15">Teen 15+</option>
-                  <option value="12">Rodina 12+</option>
-                  <option value="7">Děti 7+</option>
-                </select>
-              </label>
-
-              <label>
-                Barva
-                <select id="createProfileColor">
-                  <option value="blue">Modrá</option>
-                  <option value="green">Zelená</option>
-                  <option value="yellow">Žlutá</option>
-                  <option value="red">Červená</option>
-                  <option value="purple">Fialová</option>
-                </select>
-              </label>
-            </div>
-
-            <div class="admin-form-actions">
-              <button class="secondary-button" type="submit">
-                Vytvořit profil
-              </button>
-
-              <span id="createProfileMessage" class="muted-text"></span>
-            </div>
-          </form>
-          <div class="admin-table-wrapper">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Profil</th>
-                  <th>Stav</th>
-                  <th>Věkový limit</th>
-                  <th>Blokované služby</th>
-                  <th>Můj seznam</th>
-                  <th>Zhlédnuto</th>
-                  <th>Skryto</th>
-                  <th>Celkem statusů</th>
-                </tr>
-              </thead>
-              <tbody id="adminProfilesTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-        <div class="admin-table-section">
-          <h3>Externí odkazy</h3>
-
-          <div id="adminExternalLinksMessage" class="muted-text">
-            Přehled externích odkazů zatím není načtený.
-          </div>
-
-          <div id="adminExternalLinksSummary" class="admin-grid admin-compact-grid"></div>
-
-          <h4 class="admin-subheading">Podle služby</h4>
-
-          <div class="admin-table-wrapper">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Služba</th>
-                  <th>Vazby titul/služba</th>
-                  <th>Externí odkazy</th>
-                  <th>Chybí odkazy</th>
-                  <th>Poslední sync</th>
-                </tr>
-              </thead>
-              <tbody id="adminExternalLinksServiceTableBody"></tbody>
-            </table>
-          </div>
-
-          <h4 class="admin-subheading">Poslední aktualizované odkazy</h4>
-
-          <div class="admin-table-wrapper">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Titul</th>
-                  <th>Typ</th>
-                  <th>Služba</th>
-                  <th>Zdroj</th>
-                  <th>Sync</th>
-                </tr>
-              </thead>
-              <tbody id="adminExternalLinksRecentTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="admin-table-section">
-          <h3>Kvalita katalogu</h3>
-
-          <div id="adminCatalogQualityMessage" class="muted-text">
-            Přehled kvality katalogu zatím není načtený.
-          </div>
-
-          <div id="adminCatalogQualitySummary" class="admin-grid admin-compact-grid"></div>
-
-          <h4 class="admin-subheading">Podle typu</h4>
-
-          <div class="admin-table-wrapper">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Typ</th>
-                  <th>Tituly</th>
-                  <th>Chybí plakát</th>
-                  <th>Chybí popis</th>
-                  <th>Chybí délka</th>
-                </tr>
-              </thead>
-              <tbody id="adminCatalogQualityTypeTableBody"></tbody>
-            </table>
-          </div>
-
-          <h4 class="admin-subheading">Poslední aktualizované tituly</h4>
-
-          <div class="admin-table-wrapper">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Titul</th>
-                  <th>Typ</th>
-                  <th>Plakát</th>
-                  <th>Popis</th>
-                  <th>Délka</th>
-                  <th>Jazyk</th>
-                  <th>Hodnocení</th>
-                  <th>Aktualizováno</th>
-                </tr>
-              </thead>
-              <tbody id="adminCatalogQualityRecentTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <section class="news-section">
-        <div class="section-header">
-          <div>
-            <h2>Novinky</h2>
-            <p>Nově dostupné a nově vydané tituly.</p>
-          </div>
-
-          <button id="refreshNewsButton" type="button">
-            Obnovit novinky
-          </button>
-        </div>
-
-        <div class="news-tabs" role="tablist" aria-label="Typ novinek">
-          <button class="news-tab is-active" type="button" data-news-endpoint="/api/catalog/new">
-            Nově dostupné
-          </button>
-
-          <button class="news-tab" type="button" data-news-endpoint="/api/catalog/new-movies">
-            Nové filmy
-          </button>
-
-          <button class="news-tab" type="button" data-news-endpoint="/api/catalog/new-series">
-            Nové seriály
-          </button>
-        </div>
-
-        <p id="newsStatus" class="catalog-status">Načítám novinky...</p>
-        <div id="newsGrid" class="catalog"></div>
-      </section>
-
-      <section class="watchlist-section">
-        <div class="section-header">
-          <div>
-            <h2>Můj seznam</h2>
-            <p>Tituly označené jako Chci vidět.</p>
-          </div>
-
-          <button id="refreshWatchlistButton" type="button">
-            Obnovit můj seznam
-          </button>
-        </div>
-
-        <p id="watchlistStatus" class="catalog-status">Načítám můj seznam...</p>
-        <div id="watchlistGrid" class="catalog"></div>
-      </section>
-
-      <section class="watched-section">
-        <div class="section-header">
-          <div>
-            <h2>Zhlédnuto</h2>
-            <p>Tituly označené jako Zhlédnuto.</p>
-          </div>
-
-          <button id="refreshWatchedButton" type="button">
-            Obnovit zhlédnuté
-          </button>
-        </div>
-
-        <p id="watchedStatus" class="catalog-status">Načítám zhlédnuté tituly...</p>
-        <div id="watchedGrid" class="catalog"></div>
-      </section>
-
-      <section>
-        <h2>Katalog</h2>
-        <p id="catalogStatus" class="catalog-status">Načítám katalog...</p>
-        <div id="catalog" class="catalog"></div>
-      </section>
-  </main>
-
-  <div id="titleModal" class="modal" hidden>
-    <div class="modal-backdrop" data-modal-close></div>
-
-    <section class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <button id="closeTitleModal" class="modal-close" type="button" aria-label="Zavřít detail titulu">
-        ×
-      </button>
-
-      <div id="titleDetail" class="title-detail">
-        <h2 id="modalTitle">Detail titulu</h2>
-        <p>Načítám detail...</p>
-      </div>
-    </section>
-  </div>
-
-  <footer class="app-footer">
-    <p>
-      This product uses the TMDB API but is not endorsed or certified by TMDB.
-    </p>
-  </footer>
-
-  <script src="app.js"></script>
-</body>
-
+    <script src="app.js"></script>
+  </body>
 </html>

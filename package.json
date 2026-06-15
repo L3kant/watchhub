@@ -12,7 +12,11 @@
     "tmdb:sync-providers": "node scripts/sync-providers.js",
     "tmdb:sync-catalog": "node scripts/sync-catalog.js",
     "tmdb:sync-genres": "node scripts/sync-genres.js",
-    "code:export": "node scripts/export-code-for-analysis.js"
+    "code:export": "node scripts/export-code-for-analysis.js",
+    "format": "prettier --write . --ignore-unknown",
+    "format:check": "prettier --check . --ignore-unknown",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "keywords": [],
   "author": "L3kant",
@@ -20,5 +24,11 @@
   "dependencies": {
     "dotenv": "^17.4.2",
     "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.5.0",
+    "globals": "^17.6.0",
+    "prettier": "^3.8.4"
   }
 }

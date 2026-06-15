@@ -18,36 +18,42 @@ const GENRE_ENDPOINTS = [
 
 function getExistingGenre(tmdbGenreId, mediaType) {
   return db
-    .prepare(`
+    .prepare(
+      `
       SELECT genre_id
       FROM media_genres
       WHERE tmdb_genre_id = ?
         AND media_type = ?
-    `)
+    `,
+    )
     .get(tmdbGenreId, mediaType);
 }
 
 function insertGenre(tmdbGenreId, mediaType, genreName) {
   const result = db
-    .prepare(`
+    .prepare(
+      `
       INSERT INTO media_genres (
         genre_name,
         tmdb_genre_id,
         media_type
       )
       VALUES (?, ?, ?)
-    `)
+    `,
+    )
     .run(genreName, tmdbGenreId, mediaType);
 
   return result.lastInsertRowid;
 }
 
 function updateGenre(genreId, genreName) {
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE media_genres
     SET genre_name = ?
     WHERE genre_id = ?
-  `).run(genreName, genreId);
+  `,
+  ).run(genreName, genreId);
 }
 
 function upsertGenre(tmdbGenreId, mediaType, genreName) {
@@ -86,11 +92,7 @@ async function syncGenresForMediaType(endpoint) {
 
   try {
     for (const genre of response.genres) {
-      const result = upsertGenre(
-        genre.id,
-        endpoint.mediaType,
-        genre.name
-      );
+      const result = upsertGenre(genre.id, endpoint.mediaType, genre.name);
 
       if (result.inserted) {
         stats.inserted += 1;

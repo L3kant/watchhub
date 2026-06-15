@@ -4,7 +4,9 @@ const db = require('../database/db');
 const router = express.Router();
 
 function getSubscriptionById(subscriptionId) {
-  return db.prepare(`
+  return db
+    .prepare(
+      `
     SELECT
       us.subscription_id,
       us.service_id,
@@ -20,7 +22,9 @@ function getSubscriptionById(subscriptionId) {
     JOIN streaming_services ss
       ON ss.service_id = us.service_id
     WHERE us.subscription_id = ?
-  `).get(subscriptionId);
+  `,
+    )
+    .get(subscriptionId);
 }
 
 function isValidDateString(value) {
@@ -37,7 +41,9 @@ function isValidDateString(value) {
 
 router.get('/', (req, res) => {
   try {
-    const subscriptions = db.prepare(`
+    const subscriptions = db
+      .prepare(
+        `
       SELECT
         us.subscription_id,
         us.service_id,
@@ -53,16 +59,18 @@ router.get('/', (req, res) => {
       JOIN streaming_services ss
         ON ss.service_id = us.service_id
       ORDER BY ss.service_name ASC
-    `).all();
+    `,
+      )
+      .all();
 
     res.json({
-      data: subscriptions
+      data: subscriptions,
     });
   } catch (error) {
     console.error(error);
 
     res.status(500).json({
-      error: 'Failed to load subscriptions'
+      error: 'Failed to load subscriptions',
     });
   }
 });
@@ -75,14 +83,14 @@ router.post('/', (req, res) => {
       billing_cycle,
       price_czk = null,
       next_billing_date = null,
-      notes = null
+      notes = null,
     } = req.body;
 
     const serviceId = Number(service_id);
 
     if (!Number.isInteger(serviceId) || serviceId <= 0) {
       return res.status(400).json({
-        error: 'service_id must be a positive integer'
+        error: 'service_id must be a positive integer',
       });
     }
 
@@ -90,68 +98,70 @@ router.post('/', (req, res) => {
 
     if (!Number.isInteger(activeFlag) || ![0, 1].includes(activeFlag)) {
       return res.status(400).json({
-        error: 'active_flag must be 0 or 1'
+        error: 'active_flag must be 0 or 1',
       });
     }
 
     if (!['monthly', 'yearly'].includes(billing_cycle)) {
       return res.status(400).json({
-        error: 'billing_cycle must be monthly or yearly'
+        error: 'billing_cycle must be monthly or yearly',
       });
     }
 
-    const price =
-      price_czk === null || price_czk === ''
-        ? null
-        : Number(price_czk);
+    const price = price_czk === null || price_czk === '' ? null : Number(price_czk);
 
     if (price !== null && (!Number.isInteger(price) || price < 0)) {
       return res.status(400).json({
-        error: 'price_czk must be a non-negative integer'
+        error: 'price_czk must be a non-negative integer',
       });
     }
 
     const nextBillingDate =
-      next_billing_date === null || next_billing_date === ''
-        ? null
-        : next_billing_date;
+      next_billing_date === null || next_billing_date === '' ? null : next_billing_date;
 
     if (!isValidDateString(nextBillingDate)) {
       return res.status(400).json({
-        error: 'next_billing_date must be in YYYY-MM-DD format'
+        error: 'next_billing_date must be in YYYY-MM-DD format',
       });
     }
 
-    const cleanNotes =
-      typeof notes === 'string' && notes.trim().length > 0
-        ? notes.trim()
-        : null;
+    const cleanNotes = typeof notes === 'string' && notes.trim().length > 0 ? notes.trim() : null;
 
-    const service = db.prepare(`
+    const service = db
+      .prepare(
+        `
       SELECT service_id
       FROM streaming_services
       WHERE service_id = ?
-    `).get(serviceId);
+    `,
+      )
+      .get(serviceId);
 
     if (!service) {
       return res.status(404).json({
-        error: 'Streaming service not found'
+        error: 'Streaming service not found',
       });
     }
 
-    const existingSubscription = db.prepare(`
+    const existingSubscription = db
+      .prepare(
+        `
       SELECT subscription_id
       FROM user_subscriptions
       WHERE service_id = ?
-    `).get(serviceId);
+    `,
+      )
+      .get(serviceId);
 
     if (existingSubscription) {
       return res.status(409).json({
-        error: 'Subscription for this service already exists'
+        error: 'Subscription for this service already exists',
       });
     }
 
-    const result = db.prepare(`
+    const result = db
+      .prepare(
+        `
       INSERT INTO user_subscriptions (
         service_id,
         active_flag,
@@ -161,25 +171,20 @@ router.post('/', (req, res) => {
         notes
       )
       VALUES (?, ?, ?, ?, ?, ?)
-    `).run(
-      serviceId,
-      activeFlag,
-      billing_cycle,
-      price,
-      nextBillingDate,
-      cleanNotes
-    );
+    `,
+      )
+      .run(serviceId, activeFlag, billing_cycle, price, nextBillingDate, cleanNotes);
 
     const createdSubscription = getSubscriptionById(result.lastInsertRowid);
 
     res.status(201).json({
-      data: createdSubscription
+      data: createdSubscription,
     });
   } catch (error) {
     console.error(error);
 
     res.status(500).json({
-      error: 'Failed to create subscription'
+      error: 'Failed to create subscription',
     });
   }
 });
