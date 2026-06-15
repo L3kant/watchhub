@@ -11,7 +11,8 @@
     "catalog:summary": "node scripts/catalog-summary.js",
     "tmdb:sync-providers": "node scripts/sync-providers.js",
     "tmdb:sync-catalog": "node scripts/sync-catalog.js",
-    "tmdb:sync-genres": "node scripts/sync-genres.js"
+    "tmdb:sync-genres": "node scripts/sync-genres.js",
+    "code:export": "node scripts/export-code-for-analysis.js"
   },
   "keywords": [],
   "author": "L3kant",
