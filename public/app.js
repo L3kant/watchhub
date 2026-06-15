@@ -668,12 +668,18 @@ async function loadNews() {
   newsStatus.textContent = 'Načítám novinky...';
   newsGrid.innerHTML = '';
 
-  const params = new URLSearchParams();
-  params.set('limit', '12');
+ const params = new URLSearchParams();
+params.set('limit', '12');
 
-  if (activeProfileId) {
-    params.set('profile', activeProfileId);
-  }
+if (activeProfileId) {
+  params.set('profile', activeProfileId);
+}
+
+const selectedService = serviceFilter.value;
+
+if (selectedService !== '') {
+  params.set('service', selectedService);
+}
 
   try {
     const response = await fetch(`${activeNewsEndpoint}?${params.toString()}`);
@@ -684,7 +690,7 @@ async function loadNews() {
     }
 
 if (!result.data || result.data.length === 0) {
-  newsStatus.textContent = 'Zatím nejsou dostupné žádné novinky.';
+  newsStatus.textContent = 'Pro aktuální filtr nejsou dostupné žádné novinky.';
   return;
 }
 
@@ -741,7 +747,10 @@ if (refreshNewsButton) {
 }
 
 searchInput.addEventListener('input', loadCatalog);
-serviceFilter.addEventListener('change', loadCatalog);
+serviceFilter.addEventListener('change', () => {
+  loadCatalog();
+  loadNews();
+});
 typeFilter.addEventListener('change', loadCatalog);
 genreFilter.addEventListener('change', loadCatalog);
 
