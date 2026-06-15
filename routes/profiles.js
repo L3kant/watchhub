@@ -336,6 +336,49 @@ router.patch('/:profileId', (req, res) => {
   }
 });
 
+router.delete('/:profileId', (req, res) => {
+  try {
+    const profileId = parseProfileId(req.params.profileId);
+    const currentProfile = getProfileById(profileId);
+
+    if (!currentProfile) {
+      return res.status(404).json({
+        error: 'Profile not found.',
+      });
+    }
+
+    if (currentProfile.is_admin) {
+      return res.status(400).json({
+        error: 'Admin profile cannot be deactivated.',
+      });
+    }
+
+    db.prepare(`
+      UPDATE user_profiles
+      SET
+        active_flag = 0,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE profile_id = ?
+    `).run(profileId);
+
+    const updatedProfile = getProfileById(profileId);
+
+    return res.json({
+      data: updatedProfile,
+    });
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+
+    if (statusCode >= 500) {
+      console.error('Failed to deactivate profile:', error);
+    }
+
+    return res.status(statusCode).json({
+      error: error.message || 'Failed to deactivate profile.',
+    });
+  }
+});
+
 router.post('/', (req, res) => {
   try {
     const profileName = normalizeProfileName(req.body.profile_name);
