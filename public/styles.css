@@ -438,6 +438,80 @@ body.modal-open {
   background: #3a1f1f;
 }
 
+.admin-section {
+  margin-top: 2rem;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.admin-card {
+  border: 1px solid #2f3b4a;
+  border-radius: 12px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.admin-card-label {
+  color: #9ca3af;
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+
+.admin-card-value {
+  font-size: 1.45rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.admin-card-note {
+  color: #9ca3af;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.admin-section .section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.secondary-button {
+  border: 1px solid #3f4b5a;
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  background: #1f1f1f;
+  color: #f9fafb;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondary-button:hover {
+  background: #2a2a2a;
+  border-color: #64748b;
+}
+
+.secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (max-width: 760px) {
+  .admin-section .section-header {
+    flex-direction: column;
+  }
+
+  .secondary-button {
+    width: 100%;
+  }
+}
+
 @media (max-width: 700px) {
   .content {
     padding: 16px;
