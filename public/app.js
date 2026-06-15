@@ -19,6 +19,7 @@ const watchlistGrid = document.getElementById("watchlistGrid");
 const refreshWatchedButton = document.getElementById("refreshWatchedButton");
 const watchedStatus = document.getElementById("watchedStatus");
 const watchedGrid = document.getElementById("watchedGrid");
+const refreshAdminButton = document.getElementById("refreshAdminButton");
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w342";
 
@@ -89,6 +90,27 @@ function formatDate(value) {
   }
 
   return `${day}. ${month}. ${year}`;
+}
+
+function formatAdminNumber(value) {
+  const number = Number(value || 0);
+  return number.toLocaleString("cs-CZ");
+}
+
+function formatAdminPercent(value) {
+  if (value === null || value === undefined) {
+    return "—";
+  }
+
+  return `${Math.round(Number(value) * 100)} %`;
+}
+
+function formatAdminDate(value) {
+  if (!value) {
+    return "—";
+  }
+
+  return new Date(value).toLocaleString("cs-CZ");
 }
 
 function getPrimaryDate(title) {
@@ -439,6 +461,84 @@ function renderCatalog(titles) {
   catalogStatus.textContent = `Zobrazeno titulů: ${titles.length}`;
 }
 
+function renderAdminStatusCard(label, value, note = "") {
+  return `
+    <article class="admin-card">
+      <div class="admin-card-label">${label}</div>
+      <div class="admin-card-value">${value}</div>
+      ${note ? `<div class="admin-card-note">${note}</div>` : ""}
+    </article>
+  `;
+}
+
+function renderAdminStatus({ status, quota }) {
+  const adminStatusGrid = document.querySelector("#adminStatusGrid");
+  const adminStatusMessage = document.querySelector("#adminStatusMessage");
+
+  if (!adminStatusGrid || !adminStatusMessage) {
+    return;
+  }
+
+  const quotaData = quota && quota.quota ? quota.quota : null;
+
+  const cards = [
+    renderAdminStatusCard(
+      "Služby",
+      `${formatAdminNumber(status.active_services_count)} / ${formatAdminNumber(status.services_count)}`,
+      "aktivní / celkem",
+    ),
+
+    renderAdminStatusCard(
+      "Tituly",
+      formatAdminNumber(status.titles_count),
+      `${formatAdminNumber(status.movies_count)} filmů, ${formatAdminNumber(status.series_count)} seriálů`,
+    ),
+
+    renderAdminStatusCard(
+      "Profily",
+      `${formatAdminNumber(status.active_profiles_count)} / ${formatAdminNumber(status.profiles_count)}`,
+      "aktivní / celkem",
+    ),
+
+    renderAdminStatusCard(
+      "Profilové statusy",
+      formatAdminNumber(status.profile_statuses_count),
+      `${formatAdminNumber(status.planned_count)} v seznamu, ${formatAdminNumber(status.watched_count)} zhlédnuto, ${formatAdminNumber(status.hidden_count)} skryto`,
+    ),
+
+    renderAdminStatusCard(
+      "Externí odkazy",
+      formatAdminNumber(status.external_links_count),
+      `poslední sync: ${formatAdminDate(status.latest_external_url_synced_at)}`,
+    ),
+
+    renderAdminStatusCard(
+      "Movie of the Night",
+      quotaData
+        ? `${formatAdminNumber(quotaData.used)} / ${formatAdminNumber(quotaData.total)}`
+        : "—",
+      quotaData
+        ? `${formatAdminNumber(quotaData.remaining)} zbývá, reset: ${formatAdminDate(quotaData.next_reset_at)}`
+        : "quota není dostupná",
+    ),
+
+    renderAdminStatusCard(
+      "Využití MOTN limitu",
+      quotaData ? formatAdminPercent(quotaData.consumption_rate) : "—",
+      quotaData && quotaData.source ? quotaData.source : "",
+    ),
+
+    renderAdminStatusCard(
+      "Nově dostupné",
+      formatAdminDate(status.latest_title_service_created_at),
+      "poslední záznam v title_services",
+    ),
+  ];
+
+  adminStatusGrid.innerHTML = cards.join("");
+  adminStatusMessage.textContent = `Aktualizováno: ${formatAdminDate(status.generated_at)}`;
+}
+
 function createNewsCard(item) {
   const card = document.createElement("article");
   card.className = "title-card";
@@ -592,6 +692,7 @@ async function refreshExternalLinks(titleId, button) {
     }
 
     await loadTitleDetail(titleId);
+    await loadAdminStatus();
 
     if (result.data.updated_count === 0) {
       alert(
@@ -705,6 +806,45 @@ async function loadTitleDetail(titleId) {
   } catch (error) {
     console.error("Failed to load title detail:", error);
     showDetailError();
+  }
+}
+
+async function loadAdminStatus() {
+  const adminStatusMessage = document.querySelector("#adminStatusMessage");
+  const adminStatusGrid = document.querySelector("#adminStatusGrid");
+
+  if (!adminStatusMessage || !adminStatusGrid) {
+    return;
+  }
+
+  adminStatusMessage.textContent = "Načítám admin přehled...";
+
+  try {
+    const [statusResponse, quotaResponse] = await Promise.all([
+      fetch("/api/admin/status"),
+      fetch("/api/admin/movie-of-the-night/quota"),
+    ]);
+
+    if (!statusResponse.ok) {
+      throw new Error("Nepodařilo se načíst admin status.");
+    }
+
+    if (!quotaResponse.ok) {
+      throw new Error("Nepodařilo se načíst Movie of the Night quota.");
+    }
+
+    const statusPayload = await statusResponse.json();
+    const quotaPayload = await quotaResponse.json();
+
+    renderAdminStatus({
+      status: statusPayload.data,
+      quota: quotaPayload.data,
+    });
+  } catch (error) {
+    console.error(error);
+
+    adminStatusMessage.textContent = "Admin přehled se nepodařilo načíst.";
+    adminStatusGrid.innerHTML = "";
   }
 }
 
@@ -1045,6 +1185,10 @@ if (refreshWatchedButton) {
   refreshWatchedButton.addEventListener("click", loadWatchedList);
 }
 
+if (refreshAdminButton) {
+  refreshAdminButton.addEventListener("click", loadAdminStatus);
+}
+
 searchInput.addEventListener("input", loadCatalog);
 serviceFilter.addEventListener("change", () => {
   loadCatalog();
@@ -1075,6 +1219,7 @@ async function initApp() {
     await loadWatchlist();
     await loadWatchedList();
     await loadCatalog();
+    await loadAdminStatus();
   } catch (error) {
     console.error("Failed to initialize app:", error);
 
