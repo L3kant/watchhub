@@ -351,6 +351,10 @@ body.modal-open {
   margin-bottom: 2rem;
 }
 
+.watchlist-section {
+  margin-bottom: 2rem;
+}
+
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -384,7 +388,8 @@ body.modal-open {
   background: #2c2c2c;
 }
 
-#refreshNewsButton {
+#refreshNewsButton,
+#refreshWatchlistButton {
   padding: 0.5rem 0.8rem;
   border: 1px solid #3a3a3a;
   border-radius: 0.5rem;

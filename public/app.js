@@ -1,74 +1,79 @@
-const catalogElement = document.querySelector('#catalog');
-const detailElement = document.querySelector('#titleDetail');
-const searchInput = document.querySelector('#searchInput');
-const serviceFilter = document.querySelector('#serviceFilter');
-const typeFilter = document.querySelector('#typeFilter');
-const genreFilter = document.querySelector('#genreFilter');
-const catalogStatus = document.querySelector('#catalogStatus');
-const titleModal = document.querySelector('#titleModal');
-const closeTitleModalButton = document.querySelector('#closeTitleModal');
-const refreshNewsButton = document.getElementById('refreshNewsButton');
-const newsStatus = document.getElementById('newsStatus');
-const newsGrid = document.getElementById('newsGrid');
-const newsTabs = document.querySelectorAll('.news-tab');
+const catalogElement = document.querySelector("#catalog");
+const detailElement = document.querySelector("#titleDetail");
+const searchInput = document.querySelector("#searchInput");
+const serviceFilter = document.querySelector("#serviceFilter");
+const typeFilter = document.querySelector("#typeFilter");
+const genreFilter = document.querySelector("#genreFilter");
+const catalogStatus = document.querySelector("#catalogStatus");
+const titleModal = document.querySelector("#titleModal");
+const closeTitleModalButton = document.querySelector("#closeTitleModal");
+const refreshNewsButton = document.getElementById("refreshNewsButton");
+const newsStatus = document.getElementById("newsStatus");
+const newsGrid = document.getElementById("newsGrid");
+const newsTabs = document.querySelectorAll(".news-tab");
+const refreshWatchlistButton = document.getElementById(
+  "refreshWatchlistButton",
+);
+const watchlistStatus = document.getElementById("watchlistStatus");
+const watchlistGrid = document.getElementById("watchlistGrid");
 
-const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w342';
+const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w342";
 
-const PROFILE_STORAGE_KEY = 'watchhub.activeProfileId';
+const PROFILE_STORAGE_KEY = "watchhub.activeProfileId";
 
 const PROFILE_TITLE_STATUSES = [
-  { value: 'planned', label: 'Chci vidět' },
-  { value: 'watched', label: 'Zhlédnuto' },
-  { value: 'hidden', label: 'Skrýt' },
+  { value: "planned", label: "Chci vidět" },
+  { value: "watched", label: "Zhlédnuto" },
+  { value: "hidden", label: "Skrýt" },
 ];
 
-const profileSelect = document.querySelector('#profileSelect');
+const profileSelect = document.querySelector("#profileSelect");
 
 let profiles = [];
 let activeProfileId = null;
-let activeNewsEndpoint = '/api/catalog/new';
+let activeNewsEndpoint = "/api/catalog/new";
 
 let currentTitles = [];
 
 function getTypeLabel(type) {
-  if (type === 'movie') {
-    return 'Film';
+  if (type === "movie") {
+    return "Film";
   }
 
-  if (type === 'tv') {
-    return 'Seriál';
+  if (type === "tv") {
+    return "Seriál";
   }
 
-  return 'Neznámý typ';
+  return "Neznámý typ";
 }
 
 function getProfileStatusLabel(status) {
-  if (status === 'watching') {
-    return 'Sleduji';
+  if (status === "watching") {
+    return "Sleduji";
   }
 
   const statusConfig = PROFILE_TITLE_STATUSES.find((item) => {
     return item.value === status;
   });
 
-  return statusConfig ? statusConfig.label : 'Bez stavu';
+  return statusConfig ? statusConfig.label : "Bez stavu";
 }
 
 function formatRating(ratingValue) {
   if (ratingValue === null || ratingValue === undefined) {
-    return 'bez hodnocení';
+    return "bez hodnocení";
   }
 
   return Number(ratingValue).toFixed(1);
 }
 
 function formatDate(value) {
-  if (typeof value !== 'string' || value.trim() === '') {
+  if (typeof value !== "string" || value.trim() === "") {
     return null;
   }
 
   const dateOnly = value.trim().slice(0, 10);
-  const parts = dateOnly.split('-');
+  const parts = dateOnly.split("-");
 
   if (parts.length !== 3) {
     return null;
@@ -84,22 +89,22 @@ function formatDate(value) {
 }
 
 function getPrimaryDate(title) {
-  if (title.media_type === 'movie') {
+  if (title.media_type === "movie") {
     return {
-      label: 'Datum vydání',
+      label: "Datum vydání",
       value: formatDate(title.release_date),
     };
   }
 
-  if (title.media_type === 'tv') {
+  if (title.media_type === "tv") {
     return {
-      label: 'První vysílání',
+      label: "První vysílání",
       value: formatDate(title.first_air_date),
     };
   }
 
   return {
-    label: 'Datum',
+    label: "Datum",
     value: null,
   };
 }
@@ -115,12 +120,12 @@ function getCardDateText(title) {
     return String(title.release_year);
   }
 
-  return 'neznámé datum';
+  return "neznámé datum";
 }
 
 function createBadge(text, secondary = false) {
-  const badge = document.createElement('span');
-  badge.className = secondary ? 'badge secondary' : 'badge';
+  const badge = document.createElement("span");
+  badge.className = secondary ? "badge secondary" : "badge";
   badge.textContent = text;
   return badge;
 }
@@ -132,7 +137,7 @@ function createProfileStatusBadge(status) {
 
   const label = getProfileStatusLabel(status);
 
-  if (label === 'Bez stavu') {
+  if (label === "Bez stavu") {
     return null;
   }
 
@@ -141,25 +146,25 @@ function createProfileStatusBadge(status) {
 
 function createPoster(title, className) {
   if (!title.poster_path) {
-    const placeholder = document.createElement('div');
+    const placeholder = document.createElement("div");
     placeholder.className = `${className} title-poster-placeholder`;
-    placeholder.textContent = 'Bez plakátu';
+    placeholder.textContent = "Bez plakátu";
     return placeholder;
   }
 
-  const image = document.createElement('img');
+  const image = document.createElement("img");
   image.className = className;
   image.src = `${TMDB_IMAGE_BASE_URL}${title.poster_path}`;
   image.alt = `Plakát: ${title.display_title}`;
-  image.loading = 'lazy';
+  image.loading = "lazy";
 
   return image;
 }
 
 function createInfoLine(label, value) {
-  const line = document.createElement('p');
+  const line = document.createElement("p");
 
-  const strong = document.createElement('strong');
+  const strong = document.createElement("strong");
   strong.textContent = `${label}: `;
 
   line.appendChild(strong);
@@ -169,23 +174,23 @@ function createInfoLine(label, value) {
 }
 
 function isSafeExternalUrl(url) {
-  return typeof url === 'string' && url.startsWith('https://');
+  return typeof url === "string" && url.startsWith("https://");
 }
 
 function createServiceLaunchSection(services) {
-  const section = document.createElement('section');
-  section.className = 'detail-section';
+  const section = document.createElement("section");
+  section.className = "detail-section";
 
-  const heading = document.createElement('h3');
-  heading.textContent = 'Dostupné na';
+  const heading = document.createElement("h3");
+  heading.textContent = "Dostupné na";
 
-  const list = document.createElement('div');
-  list.className = 'detail-services';
+  const list = document.createElement("div");
+  list.className = "detail-services";
 
   if (!Array.isArray(services) || services.length === 0) {
-    const emptyText = document.createElement('p');
-    emptyText.className = 'muted-text';
-    emptyText.textContent = 'Žádná služba není dostupná.';
+    const emptyText = document.createElement("p");
+    emptyText.className = "muted-text";
+    emptyText.textContent = "Žádná služba není dostupná.";
 
     list.appendChild(emptyText);
     section.appendChild(heading);
@@ -195,28 +200,29 @@ function createServiceLaunchSection(services) {
   }
 
   for (const service of services) {
-    const row = document.createElement('div');
-    row.className = 'detail-service-row';
+    const row = document.createElement("div");
+    row.className = "detail-service-row";
 
-    const serviceName = document.createElement('span');
-    serviceName.className = 'service-name';
-    serviceName.textContent = service.service_name || 'Služba';
+    const serviceName = document.createElement("span");
+    serviceName.className = "service-name";
+    serviceName.textContent = service.service_name || "Služba";
 
     row.appendChild(serviceName);
 
     if (isSafeExternalUrl(service.launch_url)) {
-      const link = document.createElement('a');
-      link.className = 'service-launch-link';
+      const link = document.createElement("a");
+      link.className = "service-launch-link";
       link.href = service.launch_url;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.textContent = service.launch_label || `Otevřít ${serviceName.textContent}`;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent =
+        service.launch_label || `Otevřít ${serviceName.textContent}`;
 
       row.appendChild(link);
     } else {
-      const missingLink = document.createElement('span');
-      missingLink.className = 'muted-text';
-      missingLink.textContent = 'Odkaz není dostupný';
+      const missingLink = document.createElement("span");
+      missingLink.className = "muted-text";
+      missingLink.textContent = "Odkaz není dostupný";
 
       row.appendChild(missingLink);
     }
@@ -231,41 +237,46 @@ function createServiceLaunchSection(services) {
 }
 
 function hasExternalLinks(services) {
-  return Array.isArray(services) && services.some((service) => {
-    return (
-      typeof service.external_url === 'string' &&
-      service.external_url.startsWith('https://')
-    );
-  });
+  return (
+    Array.isArray(services) &&
+    services.some((service) => {
+      return (
+        typeof service.external_url === "string" &&
+        service.external_url.startsWith("https://")
+      );
+    })
+  );
 }
 
 function createExternalLinksRefreshSection(title) {
-  const section = document.createElement('section');
-  section.className = 'detail-section';
+  const section = document.createElement("section");
+  section.className = "detail-section";
 
-  const heading = document.createElement('h3');
-  heading.textContent = 'Konkrétní odkazy';
+  const heading = document.createElement("h3");
+  heading.textContent = "Konkrétní odkazy";
 
-  const description = document.createElement('p');
-  description.className = 'muted-text';
+  const description = document.createElement("p");
+  description.className = "muted-text";
 
   const services = Array.isArray(title.services) ? title.services : [];
   const externalLinksExist = hasExternalLinks(services);
 
   if (externalLinksExist) {
-    description.textContent = 'Konkrétní odkazy jsou uložené v lokální databázi.';
+    description.textContent =
+      "Konkrétní odkazy jsou uložené v lokální databázi.";
   } else {
-    description.textContent = 'Zatím jsou použité fallback odkazy. Konkrétní odkazy můžeš načíst ručně.';
+    description.textContent =
+      "Zatím jsou použité fallback odkazy. Konkrétní odkazy můžeš načíst ručně.";
   }
 
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'external-links-refresh-button';
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "external-links-refresh-button";
   button.textContent = externalLinksExist
-    ? 'Obnovit konkrétní odkazy'
-    : 'Načíst konkrétní odkazy';
+    ? "Obnovit konkrétní odkazy"
+    : "Načíst konkrétní odkazy";
 
-  button.addEventListener('click', () => {
+  button.addEventListener("click", () => {
     refreshExternalLinks(title.title_id, button);
   });
 
@@ -277,20 +288,20 @@ function createExternalLinksRefreshSection(title) {
 }
 
 function createProfileStatusSection(title) {
-  const section = document.createElement('section');
-  section.className = 'detail-section detail-status-section';
+  const section = document.createElement("section");
+  section.className = "detail-section detail-status-section";
 
-  const heading = document.createElement('h3');
-  heading.textContent = 'Moje sledování';
+  const heading = document.createElement("h3");
+  heading.textContent = "Moje sledování";
 
-  const statusText = document.createElement('p');
-  statusText.className = 'muted-text';
+  const statusText = document.createElement("p");
+  statusText.className = "muted-text";
   statusText.textContent = activeProfileId
     ? `Aktuální stav: ${getProfileStatusLabel(title.profile_status)}`
-    : 'Vyber profil pro použití watchlistu.';
+    : "Vyber profil pro použití watchlistu.";
 
-  const actions = document.createElement('div');
-  actions.className = 'detail-status-actions';
+  const actions = document.createElement("div");
+  actions.className = "detail-status-actions";
 
   if (!activeProfileId) {
     section.appendChild(heading);
@@ -301,16 +312,16 @@ function createProfileStatusSection(title) {
   }
 
   for (const statusConfig of PROFILE_TITLE_STATUSES) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'status-action-button';
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "status-action-button";
     button.textContent = statusConfig.label;
 
     if (title.profile_status === statusConfig.value) {
-      button.classList.add('is-active');
+      button.classList.add("is-active");
     }
 
-    button.addEventListener('click', () => {
+    button.addEventListener("click", () => {
       updateTitleStatus(title.title_id, statusConfig.value);
     });
 
@@ -318,12 +329,12 @@ function createProfileStatusSection(title) {
   }
 
   if (title.profile_status) {
-    const clearButton = document.createElement('button');
-    clearButton.type = 'button';
-    clearButton.className = 'status-action-button danger-button';
-    clearButton.textContent = 'Zrušit stav';
+    const clearButton = document.createElement("button");
+    clearButton.type = "button";
+    clearButton.className = "status-action-button danger-button";
+    clearButton.textContent = "Zrušit stav";
 
-    clearButton.addEventListener('click', () => {
+    clearButton.addEventListener("click", () => {
       clearTitleStatus(title.title_id);
     });
 
@@ -339,43 +350,43 @@ function createProfileStatusSection(title) {
 
 function openTitleModal() {
   titleModal.hidden = false;
-  document.body.classList.add('modal-open');
+  document.body.classList.add("modal-open");
 }
 
 function closeTitleModal() {
   titleModal.hidden = true;
-  document.body.classList.remove('modal-open');
+  document.body.classList.remove("modal-open");
 }
 
 function createCatalogCard(title) {
-  const card = document.createElement('article');
-  card.className = 'title-card';
+  const card = document.createElement("article");
+  card.className = "title-card";
   card.tabIndex = 0;
 
-  const poster = createPoster(title, 'title-poster');
+  const poster = createPoster(title, "title-poster");
 
-  const heading = document.createElement('h3');
+  const heading = document.createElement("h3");
   heading.textContent = title.display_title;
 
-  const meta = document.createElement('p');
+  const meta = document.createElement("p");
   meta.textContent = `${getTypeLabel(title.media_type)} · ${getCardDateText(title)}`;
 
-  const services = document.createElement('div');
-  services.className = 'badge-list';
+  const services = document.createElement("div");
+  services.className = "badge-list";
 
   for (const service of title.services || []) {
     services.appendChild(createBadge(service.service_name));
   }
 
-  const genres = document.createElement('div');
-  genres.className = 'badge-list';
+  const genres = document.createElement("div");
+  genres.className = "badge-list";
 
   for (const genre of title.genres || []) {
     genres.appendChild(createBadge(genre.genre_name, true));
   }
 
-  const rating = document.createElement('span');
-  rating.className = 'badge';
+  const rating = document.createElement("span");
+  rating.className = "badge";
   rating.textContent = `Hodnocení ${formatRating(title.rating_value)}`;
 
   const profileStatusBadge = createProfileStatusBadge(title.profile_status);
@@ -385,8 +396,8 @@ function createCatalogCard(title) {
   card.appendChild(meta);
 
   if (profileStatusBadge) {
-    const profileStatusList = document.createElement('div');
-    profileStatusList.className = 'badge-list';
+    const profileStatusList = document.createElement("div");
+    profileStatusList.className = "badge-list";
     profileStatusList.appendChild(profileStatusBadge);
     card.appendChild(profileStatusList);
   }
@@ -395,12 +406,12 @@ function createCatalogCard(title) {
   card.appendChild(genres);
   card.appendChild(rating);
 
-  card.addEventListener('click', () => {
+  card.addEventListener("click", () => {
     loadTitleDetail(title.title_id);
   });
 
-  card.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
+  card.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       loadTitleDetail(title.title_id);
     }
@@ -410,11 +421,11 @@ function createCatalogCard(title) {
 }
 
 function renderCatalog(titles) {
-  catalogElement.innerHTML = '';
+  catalogElement.innerHTML = "";
 
   if (titles.length === 0) {
-    catalogElement.innerHTML = '<p>Nenalezen žádný titul.</p>';
-    catalogStatus.textContent = 'Zobrazeno titulů: 0';
+    catalogElement.innerHTML = "<p>Nenalezen žádný titul.</p>";
+    catalogStatus.textContent = "Zobrazeno titulů: 0";
     return;
   }
 
@@ -426,20 +437,20 @@ function renderCatalog(titles) {
 }
 
 function createNewsCard(item) {
-  const card = document.createElement('article');
-  card.className = 'title-card';
+  const card = document.createElement("article");
+  card.className = "title-card";
   card.tabIndex = 0;
 
-  const poster = createPoster(item, 'title-poster');
+  const poster = createPoster(item, "title-poster");
 
-  const heading = document.createElement('h3');
+  const heading = document.createElement("h3");
   heading.textContent = item.display_title;
 
-  const meta = document.createElement('p');
+  const meta = document.createElement("p");
   meta.textContent = `${getTypeLabel(item.media_type)} · ${getCardDateText(item)}`;
 
-  const services = document.createElement('div');
-  services.className = 'badge-list';
+  const services = document.createElement("div");
+  services.className = "badge-list";
 
   if (item.service_name) {
     services.appendChild(createBadge(item.service_name));
@@ -449,11 +460,12 @@ function createNewsCard(item) {
     services.appendChild(createBadge(service.service_name));
   }
 
-  const extraInfo = document.createElement('div');
-  extraInfo.className = 'badge-list';
+  const extraInfo = document.createElement("div");
+  extraInfo.className = "badge-list";
 
   if (item.available_since) {
-    const availableDate = formatDate(item.available_since) || item.available_since;
+    const availableDate =
+      formatDate(item.available_since) || item.available_since;
     extraInfo.appendChild(createBadge(`Dostupné od ${availableDate}`, true));
   }
 
@@ -469,12 +481,12 @@ function createNewsCard(item) {
   card.appendChild(services);
   card.appendChild(extraInfo);
 
-  card.addEventListener('click', () => {
+  card.addEventListener("click", () => {
     loadTitleDetail(item.title_id);
   });
 
-  card.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
+  card.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       loadTitleDetail(item.title_id);
     }
@@ -487,45 +499,49 @@ function renderDetail(title) {
   const services = Array.isArray(title.services) ? title.services : [];
   const genres = Array.isArray(title.genres) ? title.genres : [];
 
-  const genreNames = genres.length > 0
-    ? genres.map((genre) => genre.genre_name).join(', ')
-    : 'Bez žánru';
+  const genreNames =
+    genres.length > 0
+      ? genres.map((genre) => genre.genre_name).join(", ")
+      : "Bez žánru";
 
-  const originalTitleText = title.original_title || 'Není dostupný';
-  const releaseYearText = title.release_year || 'neznámý rok';
+  const originalTitleText = title.original_title || "Není dostupný";
+  const releaseYearText = title.release_year || "neznámý rok";
   const primaryDate = getPrimaryDate(title);
-  const primaryDateText = primaryDate.value || 'není dostupné';
-  const languageText = title.original_language || 'neznámý jazyk';
+  const primaryDateText = primaryDate.value || "není dostupné";
+  const languageText = title.original_language || "neznámý jazyk";
 
-  const poster = createPoster(title, 'detail-poster');
+  const poster = createPoster(title, "detail-poster");
 
-  detailElement.innerHTML = '';
+  detailElement.innerHTML = "";
 
-  const wrapper = document.createElement('article');
-  wrapper.className = 'detail-card';
+  const wrapper = document.createElement("article");
+  wrapper.className = "detail-card";
 
-  const content = document.createElement('div');
-  content.className = 'detail-content';
+  const content = document.createElement("div");
+  content.className = "detail-content";
 
-  const heading = document.createElement('h2');
-  heading.id = 'modalTitle';
+  const heading = document.createElement("h2");
+  heading.id = "modalTitle";
   heading.textContent = title.display_title;
 
-  const description = document.createElement('p');
-  description.className = 'detail-description';
-  description.textContent = title.overview_text || 'Popis zatím v lokální databázi není.';
+  const description = document.createElement("p");
+  description.className = "detail-description";
+  description.textContent =
+    title.overview_text || "Popis zatím v lokální databázi není.";
 
   content.appendChild(heading);
-  content.appendChild(createInfoLine('Originální název', originalTitleText));
-  content.appendChild(createInfoLine('Typ', getTypeLabel(title.media_type)));
-  content.appendChild(createInfoLine('Rok', releaseYearText));
+  content.appendChild(createInfoLine("Originální název", originalTitleText));
+  content.appendChild(createInfoLine("Typ", getTypeLabel(title.media_type)));
+  content.appendChild(createInfoLine("Rok", releaseYearText));
   content.appendChild(createInfoLine(primaryDate.label, primaryDateText));
-  content.appendChild(createInfoLine('Hodnocení', formatRating(title.rating_value)));
-  content.appendChild(createInfoLine('Původní jazyk', languageText));
+  content.appendChild(
+    createInfoLine("Hodnocení", formatRating(title.rating_value)),
+  );
+  content.appendChild(createInfoLine("Původní jazyk", languageText));
   content.appendChild(createProfileStatusSection(title));
   content.appendChild(createServiceLaunchSection(services));
   content.appendChild(createExternalLinksRefreshSection(title));
-  content.appendChild(createInfoLine('Žánry', genreNames));
+  content.appendChild(createInfoLine("Žánry", genreNames));
   content.appendChild(description);
 
   wrapper.appendChild(poster);
@@ -556,12 +572,15 @@ async function refreshExternalLinks(titleId, button) {
   const originalText = button.textContent;
 
   button.disabled = true;
-  button.textContent = 'Načítám odkazy...';
+  button.textContent = "Načítám odkazy...";
 
   try {
-    const response = await fetch(`/api/catalog/${titleId}/external-links/refresh`, {
-      method: 'POST',
-    });
+    const response = await fetch(
+      `/api/catalog/${titleId}/external-links/refresh`,
+      {
+        method: "POST",
+      },
+    );
 
     const result = await response.json();
 
@@ -572,15 +591,17 @@ async function refreshExternalLinks(titleId, button) {
     await loadTitleDetail(titleId);
 
     if (result.data.updated_count === 0) {
-      alert('Movie of the Night pro tento titul nevrátil žádný nový konkrétní odkaz.');
+      alert(
+        "Movie of the Night pro tento titul nevrátil žádný nový konkrétní odkaz.",
+      );
     }
   } catch (error) {
-    console.error('Failed to refresh external links:', error);
+    console.error("Failed to refresh external links:", error);
 
     button.disabled = false;
     button.textContent = originalText;
 
-    alert('Konkrétní odkazy se nepodařilo načíst.');
+    alert("Konkrétní odkazy se nepodařilo načíst.");
   }
 }
 
@@ -593,26 +614,27 @@ async function updateTitleStatus(titleId, status) {
     const response = await fetch(
       `/api/profiles/${activeProfileId}/titles/${titleId}/status`,
       {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ status }),
-      }
+      },
     );
 
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || 'Nepodařilo se uložit stav titulu.');
+      throw new Error(result.error || "Nepodařilo se uložit stav titulu.");
     }
 
     await loadTitleDetail(titleId);
     await loadCatalog();
     await loadNews();
+    await loadWatchlist();
   } catch (error) {
-    console.error('Failed to update title status:', error);
-    alert(error.message || 'Nepodařilo se uložit stav titulu.');
+    console.error("Failed to update title status:", error);
+    alert(error.message || "Nepodařilo se uložit stav titulu.");
   }
 }
 
@@ -625,22 +647,23 @@ async function clearTitleStatus(titleId) {
     const response = await fetch(
       `/api/profiles/${activeProfileId}/titles/${titleId}/status`,
       {
-        method: 'DELETE',
-      }
+        method: "DELETE",
+      },
     );
 
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || 'Nepodařilo se zrušit stav titulu.');
+      throw new Error(result.error || "Nepodařilo se zrušit stav titulu.");
     }
 
     await loadTitleDetail(titleId);
     await loadCatalog();
     await loadNews();
+    await loadWatchlist();
   } catch (error) {
-    console.error('Failed to clear title status:', error);
-    alert(error.message || 'Nepodařilo se zrušit stav titulu.');
+    console.error("Failed to clear title status:", error);
+    alert(error.message || "Nepodařilo se zrušit stav titulu.");
   }
 }
 
@@ -657,7 +680,7 @@ async function loadTitleDetail(titleId) {
     const activeProfileParam = getActiveProfileParam();
 
     if (activeProfileParam) {
-      params.set('profile', activeProfileParam);
+      params.set("profile", activeProfileParam);
     }
 
     const queryString = params.toString();
@@ -675,25 +698,25 @@ async function loadTitleDetail(titleId) {
 
     renderDetail(result.data);
   } catch (error) {
-    console.error('Failed to load title detail:', error);
+    console.error("Failed to load title detail:", error);
     showDetailError();
   }
 }
 
 function escapeHtml(value) {
   return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 async function loadProfiles() {
-  const response = await fetch('/api/profiles');
+  const response = await fetch("/api/profiles");
 
   if (!response.ok) {
-    throw new Error('Nepodařilo se načíst profily.');
+    throw new Error("Nepodařilo se načíst profily.");
   }
 
   const result = await response.json();
@@ -732,7 +755,7 @@ function renderProfileSelect() {
 
   profileSelect.innerHTML = profiles
     .map((profile) => {
-      const selected = profile.profile_id === activeProfileId ? 'selected' : '';
+      const selected = profile.profile_id === activeProfileId ? "selected" : "";
 
       return `
         <option value="${profile.profile_id}" ${selected}>
@@ -740,7 +763,7 @@ function renderProfileSelect() {
         </option>
       `;
     })
-    .join('');
+    .join("");
 }
 
 function getActiveProfileParam() {
@@ -754,12 +777,12 @@ function getActiveProfileParam() {
 function buildCatalogUrl() {
   const params = new URLSearchParams();
 
-  params.set('limit', '100');
+  params.set("limit", "100");
 
   const activeProfileParam = getActiveProfileParam();
 
   if (activeProfileParam) {
-    params.set('profile', activeProfileParam);
+    params.set("profile", activeProfileParam);
   }
 
   const searchValue = searchInput.value.trim();
@@ -767,20 +790,20 @@ function buildCatalogUrl() {
   const selectedType = typeFilter.value;
   const selectedGenre = genreFilter.value;
 
-  if (searchValue !== '') {
-    params.set('search', searchValue);
+  if (searchValue !== "") {
+    params.set("search", searchValue);
   }
 
-  if (selectedService !== '') {
-    params.set('service', selectedService);
+  if (selectedService !== "") {
+    params.set("service", selectedService);
   }
 
-  if (selectedType !== '') {
-    params.set('type', selectedType);
+  if (selectedType !== "") {
+    params.set("type", selectedType);
   }
 
-  if (selectedGenre !== '') {
-    params.set('genre', selectedGenre);
+  if (selectedGenre !== "") {
+    params.set("genre", selectedGenre);
   }
 
   return `/api/catalog?${params.toString()}`;
@@ -788,7 +811,7 @@ function buildCatalogUrl() {
 
 async function loadGenres() {
   try {
-    const response = await fetch('/api/catalog/genres');
+    const response = await fetch("/api/catalog/genres");
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
@@ -797,20 +820,20 @@ async function loadGenres() {
     const result = await response.json();
 
     for (const genre of result.data) {
-      const option = document.createElement('option');
+      const option = document.createElement("option");
       option.value = genre;
       option.textContent = genre;
 
       genreFilter.appendChild(option);
     }
   } catch (error) {
-    console.error('Failed to load genres:', error);
+    console.error("Failed to load genres:", error);
   }
 }
 
 async function loadCatalog() {
   try {
-    catalogStatus.textContent = 'Načítám katalog...';
+    catalogStatus.textContent = "Načítám katalog...";
 
     const response = await fetch(buildCatalogUrl());
 
@@ -823,10 +846,11 @@ async function loadCatalog() {
     currentTitles = result.data;
     renderCatalog(currentTitles);
   } catch (error) {
-    console.error('Failed to load catalog:', error);
+    console.error("Failed to load catalog:", error);
 
-    catalogStatus.textContent = 'Katalog se nepodařilo načíst.';
-    catalogElement.innerHTML = '<p>Zkontroluj, že běží server a endpoint /api/catalog.</p>';
+    catalogStatus.textContent = "Katalog se nepodařilo načíst.";
+    catalogElement.innerHTML =
+      "<p>Zkontroluj, že běží server a endpoint /api/catalog.</p>";
   }
 }
 
@@ -835,48 +859,93 @@ async function loadNews() {
     return;
   }
 
-  newsStatus.textContent = 'Načítám novinky...';
-  newsGrid.innerHTML = '';
+  newsStatus.textContent = "Načítám novinky...";
+  newsGrid.innerHTML = "";
 
- const params = new URLSearchParams();
-params.set('limit', '12');
+  const params = new URLSearchParams();
+  params.set("limit", "12");
 
-if (activeProfileId) {
-  params.set('profile', activeProfileId);
-}
+  if (activeProfileId) {
+    params.set("profile", activeProfileId);
+  }
 
-const selectedService = serviceFilter.value;
+  const selectedService = serviceFilter.value;
 
-if (selectedService !== '') {
-  params.set('service', selectedService);
-}
+  if (selectedService !== "") {
+    params.set("service", selectedService);
+  }
 
   try {
     const response = await fetch(`${activeNewsEndpoint}?${params.toString()}`);
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || 'Nepodařilo se načíst novinky.');
+      throw new Error(result.error || "Nepodařilo se načíst novinky.");
     }
 
-if (!result.data || result.data.length === 0) {
-  newsStatus.textContent = 'Pro aktuální filtr nejsou dostupné žádné novinky.';
-  return;
-}
+    if (!result.data || result.data.length === 0) {
+      newsStatus.textContent =
+        "Pro aktuální filtr nejsou dostupné žádné novinky.";
+      return;
+    }
 
-newsStatus.textContent = '';
+    newsStatus.textContent = "";
 
-for (const item of result.data) {
-  newsGrid.appendChild(createNewsCard(item));
-}
+    for (const item of result.data) {
+      newsGrid.appendChild(createNewsCard(item));
+    }
   } catch (error) {
-    console.error('Failed to load news:', error);
-    newsStatus.textContent = error.message || 'Nepodařilo se načíst novinky.';
+    console.error("Failed to load news:", error);
+    newsStatus.textContent = error.message || "Nepodařilo se načíst novinky.";
+  }
+}
+
+async function loadWatchlist() {
+  if (!watchlistGrid || !watchlistStatus) {
+    return;
+  }
+
+  watchlistGrid.innerHTML = "";
+
+  if (!activeProfileId) {
+    watchlistStatus.textContent = "Vyber profil pro zobrazení mého seznamu.";
+    return;
+  }
+
+  watchlistStatus.textContent = "Načítám můj seznam...";
+
+  try {
+    const response = await fetch(
+      `/api/profiles/${activeProfileId}/titles/statuses?status=planned`,
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Nepodařilo se načíst můj seznam.");
+    }
+
+    const titles = Array.isArray(result.data) ? result.data : [];
+
+    if (titles.length === 0) {
+      watchlistStatus.textContent = "V mém seznamu zatím není žádný titul.";
+      return;
+    }
+
+    watchlistStatus.textContent = "";
+
+    for (const title of titles) {
+      watchlistGrid.appendChild(createCatalogCard(title));
+    }
+  } catch (error) {
+    console.error("Failed to load watchlist:", error);
+    watchlistStatus.textContent =
+      error.message || "Nepodařilo se načíst můj seznam.";
   }
 }
 
 if (profileSelect) {
-  profileSelect.addEventListener('change', () => {
+  profileSelect.addEventListener("change", () => {
     const selectedProfileId = Number(profileSelect.value);
 
     if (!Number.isInteger(selectedProfileId) || selectedProfileId < 1) {
@@ -889,11 +958,12 @@ if (profileSelect) {
 
     loadCatalog();
     loadNews();
+    loadWatchlist();
   });
 }
 
 for (const tab of newsTabs) {
-  tab.addEventListener('click', () => {
+  tab.addEventListener("click", () => {
     const endpoint = tab.dataset.newsEndpoint;
 
     if (!endpoint) {
@@ -903,37 +973,41 @@ for (const tab of newsTabs) {
     activeNewsEndpoint = endpoint;
 
     for (const otherTab of newsTabs) {
-      otherTab.classList.remove('is-active');
+      otherTab.classList.remove("is-active");
     }
 
-    tab.classList.add('is-active');
+    tab.classList.add("is-active");
 
     loadNews();
   });
 }
 
 if (refreshNewsButton) {
-  refreshNewsButton.addEventListener('click', loadNews);
+  refreshNewsButton.addEventListener("click", loadNews);
 }
 
-searchInput.addEventListener('input', loadCatalog);
-serviceFilter.addEventListener('change', () => {
+if (refreshWatchlistButton) {
+  refreshWatchlistButton.addEventListener("click", loadWatchlist);
+}
+
+searchInput.addEventListener("input", loadCatalog);
+serviceFilter.addEventListener("change", () => {
   loadCatalog();
   loadNews();
 });
-typeFilter.addEventListener('change', loadCatalog);
-genreFilter.addEventListener('change', loadCatalog);
+typeFilter.addEventListener("change", loadCatalog);
+genreFilter.addEventListener("change", loadCatalog);
 
-closeTitleModalButton.addEventListener('click', closeTitleModal);
+closeTitleModalButton.addEventListener("click", closeTitleModal);
 
-titleModal.addEventListener('click', (event) => {
+titleModal.addEventListener("click", (event) => {
   if (event.target.dataset.modalClose !== undefined) {
     closeTitleModal();
   }
 });
 
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && !titleModal.hidden) {
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !titleModal.hidden) {
     closeTitleModal();
   }
 });
@@ -943,11 +1017,12 @@ async function initApp() {
     await loadProfiles();
     await loadGenres();
     await loadNews();
+    await loadWatchlist();
     await loadCatalog();
   } catch (error) {
-    console.error('Failed to initialize app:', error);
+    console.error("Failed to initialize app:", error);
 
-    catalogStatus.textContent = 'Aplikaci se nepodařilo načíst.';
+    catalogStatus.textContent = "Aplikaci se nepodařilo načíst.";
   }
 }
 

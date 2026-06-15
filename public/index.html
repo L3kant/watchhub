@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="cs">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,6 +9,7 @@
 
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
   <header class="app-header">
     <div class="app-header-inner">
@@ -28,11 +30,7 @@
   <main class="app-layout">
     <section class="content">
       <section class="filters">
-        <input
-          id="searchInput"
-          type="search"
-          placeholder="Hledat podle názvu..."
-        />
+        <input id="searchInput" type="search" placeholder="Hledat podle názvu..." />
 
         <select id="serviceFilter">
           <option value="">Všechny služby</option>
@@ -54,46 +52,50 @@
       </section>
 
       <section class="news-section">
-  <div class="section-header">
-    <div>
-      <h2>Novinky</h2>
-      <p>Nově dostupné a nově vydané tituly.</p>
-    </div>
+        <div class="section-header">
+          <div>
+            <h2>Novinky</h2>
+            <p>Nově dostupné a nově vydané tituly.</p>
+          </div>
 
-    <button id="refreshNewsButton" type="button">
-      Obnovit novinky
-    </button>
-  </div>
+          <button id="refreshNewsButton" type="button">
+            Obnovit novinky
+          </button>
+        </div>
 
-  <div class="news-tabs" role="tablist" aria-label="Typ novinek">
-    <button
-      class="news-tab is-active"
-      type="button"
-      data-news-endpoint="/api/catalog/new"
-    >
-      Nově dostupné
-    </button>
+        <div class="news-tabs" role="tablist" aria-label="Typ novinek">
+          <button class="news-tab is-active" type="button" data-news-endpoint="/api/catalog/new">
+            Nově dostupné
+          </button>
 
-    <button
-      class="news-tab"
-      type="button"
-      data-news-endpoint="/api/catalog/new-movies"
-    >
-      Nové filmy
-    </button>
+          <button class="news-tab" type="button" data-news-endpoint="/api/catalog/new-movies">
+            Nové filmy
+          </button>
 
-    <button
-      class="news-tab"
-      type="button"
-      data-news-endpoint="/api/catalog/new-series"
-    >
-      Nové seriály
-    </button>
-  </div>
+          <button class="news-tab" type="button" data-news-endpoint="/api/catalog/new-series">
+            Nové seriály
+          </button>
+        </div>
 
-  <p id="newsStatus" class="catalog-status">Načítám novinky...</p>
-  <div id="newsGrid" class="catalog"></div>
-</section>
+        <p id="newsStatus" class="catalog-status">Načítám novinky...</p>
+        <div id="newsGrid" class="catalog"></div>
+      </section>
+
+      <section class="watchlist-section">
+        <div class="section-header">
+          <div>
+            <h2>Můj seznam</h2>
+            <p>Tituly označené jako Chci vidět.</p>
+          </div>
+
+          <button id="refreshWatchlistButton" type="button">
+            Obnovit můj seznam
+          </button>
+        </div>
+
+        <p id="watchlistStatus" class="catalog-status">Načítám můj seznam...</p>
+        <div id="watchlistGrid" class="catalog"></div>
+      </section>
 
       <section>
         <h2>Katalog</h2>
@@ -105,18 +107,8 @@
   <div id="titleModal" class="modal" hidden>
     <div class="modal-backdrop" data-modal-close></div>
 
-    <section
-      class="modal-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modalTitle"
-    >
-      <button
-        id="closeTitleModal"
-        class="modal-close"
-        type="button"
-        aria-label="Zavřít detail titulu"
-      >
+    <section class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button id="closeTitleModal" class="modal-close" type="button" aria-label="Zavřít detail titulu">
         ×
       </button>
 
@@ -135,4 +127,5 @@
 
   <script src="app.js"></script>
 </body>
+
 </html>
