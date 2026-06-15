@@ -21,6 +21,12 @@ const watchedStatus = document.getElementById("watchedStatus");
 const watchedGrid = document.getElementById("watchedGrid");
 const refreshAdminButton = document.getElementById("refreshAdminButton");
 
+const createProfileForm = document.getElementById("createProfileForm");
+const createProfileName = document.getElementById("createProfileName");
+const createProfileAge = document.getElementById("createProfileAge");
+const createProfileColor = document.getElementById("createProfileColor");
+const createProfileMessage = document.getElementById("createProfileMessage");
+
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w342";
 
 const PROFILE_STORAGE_KEY = "watchhub.activeProfileId";
@@ -90,6 +96,88 @@ function formatDate(value) {
   }
 
   return `${day}. ${month}. ${year}`;
+}
+
+async function createProfileFromForm(event) {
+  event.preventDefault();
+
+  if (
+    !createProfileForm ||
+    !createProfileName ||
+    !createProfileAge ||
+    !createProfileColor ||
+    !createProfileMessage
+  ) {
+    return;
+  }
+
+  const profileName = createProfileName.value.trim();
+  const maxAgeRating = Number(createProfileAge.value);
+  const colorKey = createProfileColor.value;
+
+  if (profileName.length < 1 || profileName.length > 80) {
+    createProfileMessage.textContent = "Název profilu musí mít 1 až 80 znaků.";
+    return;
+  }
+
+  if (
+    !Number.isInteger(maxAgeRating) ||
+    maxAgeRating < 0 ||
+    maxAgeRating > 18
+  ) {
+    createProfileMessage.textContent = "Věkový limit musí být mezi 0 a 18.";
+    return;
+  }
+
+  createProfileMessage.textContent = "Vytvářím profil...";
+
+  try {
+    const response = await fetch("/api/profiles", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        profile_name: profileName,
+        max_age_rating: maxAgeRating,
+        blocked_services: [],
+        avatar_key: "default",
+        color_key: colorKey,
+      }),
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(payload.error || "Profil se nepodařilo vytvořit.");
+    }
+
+    const createdProfile = payload.data;
+
+    if (createdProfile && createdProfile.profile_id) {
+      activeProfileId = createdProfile.profile_id;
+      localStorage.setItem(PROFILE_STORAGE_KEY, String(activeProfileId));
+    }
+
+    createProfileForm.reset();
+    createProfileAge.value = String(maxAgeRating);
+    createProfileMessage.textContent = "Profil byl vytvořen.";
+
+    await loadProfiles();
+    await loadCatalog();
+    await loadNews();
+    await loadWatchlist();
+    await loadWatchedList();
+    await loadAdminStatus();
+    await loadAdminProfiles();
+    await loadAdminExternalLinks();
+    await loadAdminCatalogQuality();
+  } catch (error) {
+    console.error("Failed to create profile:", error);
+
+    createProfileMessage.textContent =
+      error.message || "Profil se nepodařilo vytvořit.";
+  }
 }
 
 function formatAdminNumber(value) {
@@ -867,7 +955,6 @@ function showDetailError() {
   `;
 }
 
-
 function formatAdminBoolean(value) {
   return value ? "Ano" : "Ne";
 }
@@ -976,6 +1063,8 @@ async function clearTitleStatus(titleId) {
     await loadNews();
     await loadWatchlist();
     await loadWatchedList();
+    await loadAdminStatus();
+    await loadAdminProfiles();
   } catch (error) {
     console.error("Failed to clear title status:", error);
     alert(error.message || "Nepodařilo se zrušit stav titulu.");
@@ -1075,9 +1164,7 @@ function renderAdminExternalLinks(data) {
 
   const summary = data && data.summary ? data.summary : {};
   const byService = Array.isArray(data.by_service) ? data.by_service : [];
-  const recentLinks = Array.isArray(data.recent_links)
-    ? data.recent_links
-    : [];
+  const recentLinks = Array.isArray(data.recent_links) ? data.recent_links : [];
 
   summaryElement.innerHTML = [
     renderAdminStatusCard(
@@ -1180,9 +1267,7 @@ async function loadAdminExternalLinks() {
     const payload = await response.json();
 
     if (!response.ok) {
-      throw new Error(
-        payload.error || "Nepodařilo se načíst externí odkazy.",
-      );
+      throw new Error(payload.error || "Nepodařilo se načíst externí odkazy.");
     }
 
     renderAdminExternalLinks(payload.data);
@@ -1627,6 +1712,10 @@ if (refreshWatchlistButton) {
 
 if (refreshWatchedButton) {
   refreshWatchedButton.addEventListener("click", loadWatchedList);
+}
+
+if (createProfileForm) {
+  createProfileForm.addEventListener("submit", createProfileFromForm);
 }
 
 if (refreshAdminButton) {
