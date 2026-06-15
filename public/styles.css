@@ -393,6 +393,47 @@ body.modal-open {
   cursor: pointer;
 }
 
+.detail-status-section {
+  padding: 14px;
+  border: 1px solid #333;
+  border-radius: 10px;
+  background: #202020;
+}
+
+.detail-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.status-action-button {
+  padding: 8px 12px;
+  border: 1px solid #444;
+  border-radius: 999px;
+  color: #f5f5f5;
+  background: #2a2a2a;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.status-action-button:hover,
+.status-action-button:focus-visible {
+  border-color: #777;
+  background: #333;
+}
+
+.status-action-button.is-active {
+  border-color: #f5f5f5;
+  background: #f5f5f5;
+  color: #111;
+}
+
+.status-action-button.danger-button {
+  border-color: #6b2f2f;
+  background: #3a1f1f;
+}
+
 @media (max-width: 700px) {
   .content {
     padding: 16px;

@@ -16,6 +16,13 @@ const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w342';
 
 const PROFILE_STORAGE_KEY = 'watchhub.activeProfileId';
 
+const PROFILE_TITLE_STATUSES = [
+  { value: 'planned', label: 'Chci vidět' },
+  { value: 'watching', label: 'Sleduji' },
+  { value: 'watched', label: 'Zhlédnuto' },
+  { value: 'hidden', label: 'Skrýt' },
+];
+
 const profileSelect = document.querySelector('#profileSelect');
 
 let profiles = [];
@@ -34,6 +41,14 @@ function getTypeLabel(type) {
   }
 
   return 'Neznámý typ';
+}
+
+function getProfileStatusLabel(status) {
+  const statusConfig = PROFILE_TITLE_STATUSES.find((item) => {
+    return item.value === status;
+  });
+
+  return statusConfig ? statusConfig.label : 'Bez stavu';
 }
 
 function formatRating(ratingValue) {
@@ -244,6 +259,67 @@ function createExternalLinksRefreshSection(title) {
   return section;
 }
 
+function createProfileStatusSection(title) {
+  const section = document.createElement('section');
+  section.className = 'detail-section detail-status-section';
+
+  const heading = document.createElement('h3');
+  heading.textContent = 'Moje sledování';
+
+  const statusText = document.createElement('p');
+  statusText.className = 'muted-text';
+  statusText.textContent = activeProfileId
+    ? `Aktuální stav: ${getProfileStatusLabel(title.profile_status)}`
+    : 'Vyber profil pro použití watchlistu.';
+
+  const actions = document.createElement('div');
+  actions.className = 'detail-status-actions';
+
+  if (!activeProfileId) {
+    section.appendChild(heading);
+    section.appendChild(statusText);
+    section.appendChild(actions);
+
+    return section;
+  }
+
+  for (const statusConfig of PROFILE_TITLE_STATUSES) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'status-action-button';
+    button.textContent = statusConfig.label;
+
+    if (title.profile_status === statusConfig.value) {
+      button.classList.add('is-active');
+    }
+
+    button.addEventListener('click', () => {
+      updateTitleStatus(title.title_id, statusConfig.value);
+    });
+
+    actions.appendChild(button);
+  }
+
+  if (title.profile_status) {
+    const clearButton = document.createElement('button');
+    clearButton.type = 'button';
+    clearButton.className = 'status-action-button danger-button';
+    clearButton.textContent = 'Zrušit stav';
+
+    clearButton.addEventListener('click', () => {
+      clearTitleStatus(title.title_id);
+    });
+
+    actions.appendChild(clearButton);
+  }
+
+  section.appendChild(heading);
+  section.appendChild(statusText);
+  section.appendChild(actions);
+
+  return section;
+}
+
 function openTitleModal() {
   titleModal.hidden = false;
   document.body.classList.add('modal-open');
@@ -413,6 +489,7 @@ function renderDetail(title) {
   content.appendChild(createInfoLine(primaryDate.label, primaryDateText));
   content.appendChild(createInfoLine('Hodnocení', formatRating(title.rating_value)));
   content.appendChild(createInfoLine('Původní jazyk', languageText));
+  content.appendChild(createProfileStatusSection(title));
   content.appendChild(createServiceLaunchSection(services));
   content.appendChild(createExternalLinksRefreshSection(title));
   content.appendChild(createInfoLine('Žánry', genreNames));
@@ -471,6 +548,66 @@ async function refreshExternalLinks(titleId, button) {
     button.textContent = originalText;
 
     alert('Konkrétní odkazy se nepodařilo načíst.');
+  }
+}
+
+async function updateTitleStatus(titleId, status) {
+  if (!activeProfileId || !titleId) {
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `/api/profiles/${activeProfileId}/titles/${titleId}/status`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Nepodařilo se uložit stav titulu.');
+    }
+
+    await loadTitleDetail(titleId);
+    await loadCatalog();
+    await loadNews();
+  } catch (error) {
+    console.error('Failed to update title status:', error);
+    alert(error.message || 'Nepodařilo se uložit stav titulu.');
+  }
+}
+
+async function clearTitleStatus(titleId) {
+  if (!activeProfileId || !titleId) {
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `/api/profiles/${activeProfileId}/titles/${titleId}/status`,
+      {
+        method: 'DELETE',
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Nepodařilo se zrušit stav titulu.');
+    }
+
+    await loadTitleDetail(titleId);
+    await loadCatalog();
+    await loadNews();
+  } catch (error) {
+    console.error('Failed to clear title status:', error);
+    alert(error.message || 'Nepodařilo se zrušit stav titulu.');
   }
 }
 
