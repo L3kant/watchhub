@@ -18,7 +18,6 @@ const PROFILE_STORAGE_KEY = 'watchhub.activeProfileId';
 
 const PROFILE_TITLE_STATUSES = [
   { value: 'planned', label: 'Chci vidět' },
-  { value: 'watching', label: 'Sleduji' },
   { value: 'watched', label: 'Zhlédnuto' },
   { value: 'hidden', label: 'Skrýt' },
 ];
@@ -44,6 +43,10 @@ function getTypeLabel(type) {
 }
 
 function getProfileStatusLabel(status) {
+  if (status === 'watching') {
+    return 'Sleduji';
+  }
+
   const statusConfig = PROFILE_TITLE_STATUSES.find((item) => {
     return item.value === status;
   });
