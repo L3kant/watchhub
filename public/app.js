@@ -653,6 +653,50 @@ function renderDetail(title) {
   detailElement.appendChild(wrapper);
 }
 
+function renderAdminProfiles(profilesData) {
+  const message = document.querySelector("#adminProfilesMessage");
+  const tableBody = document.querySelector("#adminProfilesTableBody");
+
+  if (!message || !tableBody) {
+    return;
+  }
+
+  if (!Array.isArray(profilesData) || profilesData.length === 0) {
+    message.textContent = "Nejsou dostupná žádná data o profilech.";
+    tableBody.innerHTML = "";
+    return;
+  }
+
+  tableBody.innerHTML = profilesData
+    .map((profile) => {
+      const activeText = profile.active_flag ? "Aktivní" : "Neaktivní";
+      const adminText = profile.is_admin ? "admin" : "běžný profil";
+
+      return `
+        <tr>
+          <td>
+            <strong>${escapeHtml(profile.profile_name)}</strong>
+            <div class="admin-table-subtext">
+              ${adminText}
+              · avatar: ${escapeHtml(profile.avatar_key || "—")}
+              · barva: ${escapeHtml(profile.color_key || "—")}
+            </div>
+          </td>
+          <td>${activeText}</td>
+          <td>${formatAdminNumber(profile.max_age_rating)}</td>
+          <td>${formatAdminNumber(profile.blocked_services_count)}</td>
+          <td>${formatAdminNumber(profile.planned_count)}</td>
+          <td>${formatAdminNumber(profile.watched_count)}</td>
+          <td>${formatAdminNumber(profile.hidden_count)}</td>
+          <td>${formatAdminNumber(profile.statuses_count)}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  message.textContent = `Načteno profilů: ${profilesData.length}`;
+}
+
 function showDetailLoading() {
   detailElement.innerHTML = `
     <h2 id="modalTitle">Detail titulu</h2>
@@ -738,6 +782,8 @@ async function updateTitleStatus(titleId, status) {
     await loadNews();
     await loadWatchlist();
     await loadWatchedList();
+    await loadAdminStatus();
+    await loadAdminProfiles();
   } catch (error) {
     console.error("Failed to update title status:", error);
     alert(error.message || "Nepodařilo se uložit stav titulu.");
@@ -873,7 +919,8 @@ async function loadAdminServices() {
   } catch (error) {
     console.error("Failed to load admin services:", error);
 
-    message.textContent = error.message || "Přehled služeb se nepodařilo načíst.";
+    message.textContent =
+      error.message || "Přehled služeb se nepodařilo načíst.";
     tableBody.innerHTML = "";
   }
 }
@@ -914,6 +961,34 @@ async function loadAdminStatus() {
 
     adminStatusMessage.textContent = "Admin přehled se nepodařilo načíst.";
     adminStatusGrid.innerHTML = "";
+  }
+}
+
+async function loadAdminProfiles() {
+  const message = document.querySelector("#adminProfilesMessage");
+  const tableBody = document.querySelector("#adminProfilesTableBody");
+
+  if (!message || !tableBody) {
+    return;
+  }
+
+  message.textContent = "Načítám přehled profilů...";
+
+  try {
+    const response = await fetch("/api/admin/profiles");
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(payload.error || "Nepodařilo se načíst profily.");
+    }
+
+    renderAdminProfiles(payload.data);
+  } catch (error) {
+    console.error("Failed to load admin profiles:", error);
+
+    message.textContent =
+      error.message || "Přehled profilů se nepodařilo načíst.";
+    tableBody.innerHTML = "";
   }
 }
 
@@ -1258,6 +1333,7 @@ if (refreshAdminButton) {
   refreshAdminButton.addEventListener("click", async () => {
     await loadAdminStatus();
     await loadAdminServices();
+    await loadAdminProfiles();
   });
 }
 
@@ -1293,6 +1369,7 @@ async function initApp() {
     await loadCatalog();
     await loadAdminStatus();
     await loadAdminServices();
+    await loadAdminProfiles();
   } catch (error) {
     console.error("Failed to initialize app:", error);
 

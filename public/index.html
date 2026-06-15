@@ -52,49 +52,74 @@
       </section>
 
       <section class="section admin-section">
-  <div class="section-header">
-    <div>
-      <h2>Admin</h2>
-      <p class="section-description">
-        Základní diagnostika databáze, katalogu a Movie of the Night limitu.
-      </p>
-    </div>
+        <div class="section-header">
+          <div>
+            <h2>Admin</h2>
+            <p class="section-description">
+              Základní diagnostika databáze, katalogu a Movie of the Night limitu.
+            </p>
+          </div>
 
-    <button id="refreshAdminButton" class="secondary-button" type="button">
-      Obnovit admin přehled
-    </button>
-  </div>
+          <button id="refreshAdminButton" class="secondary-button" type="button">
+            Obnovit admin přehled
+          </button>
+        </div>
 
-  <div id="adminStatusMessage" class="muted-text">
-    Admin přehled zatím není načtený.
-  </div>
+        <div id="adminStatusMessage" class="muted-text">
+          Admin přehled zatím není načtený.
+        </div>
 
-  <div id="adminStatusGrid" class="admin-grid"></div>
-  <div class="admin-table-section">
-  <h3>Streamovací služby</h3>
+        <div id="adminStatusGrid" class="admin-grid"></div>
+        <div class="admin-table-section">
+          <h3>Streamovací služby</h3>
 
-  <div id="adminServicesMessage" class="muted-text">
-    Přehled služeb zatím není načtený.
-  </div>
+          <div id="adminServicesMessage" class="muted-text">
+            Přehled služeb zatím není načtený.
+          </div>
 
-  <div class="admin-table-wrapper">
-    <table class="admin-table">
-      <thead>
-        <tr>
-          <th>Služba</th>
-          <th>Stav</th>
-          <th>Tituly</th>
-          <th>Filmy</th>
-          <th>Seriály</th>
-          <th>Externí odkazy</th>
-          <th>Poslední sync odkazů</th>
-        </tr>
-      </thead>
-      <tbody id="adminServicesTableBody"></tbody>
-    </table>
-  </div>
-</div>
-</section>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Služba</th>
+                  <th>Stav</th>
+                  <th>Tituly</th>
+                  <th>Filmy</th>
+                  <th>Seriály</th>
+                  <th>Externí odkazy</th>
+                  <th>Poslední sync odkazů</th>
+                </tr>
+              </thead>
+              <tbody id="adminServicesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="admin-table-section">
+          <h3>Profily</h3>
+
+          <div id="adminProfilesMessage" class="muted-text">
+            Přehled profilů zatím není načtený.
+          </div>
+
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Profil</th>
+                  <th>Stav</th>
+                  <th>Věkový limit</th>
+                  <th>Blokované služby</th>
+                  <th>Můj seznam</th>
+                  <th>Zhlédnuto</th>
+                  <th>Skryto</th>
+                  <th>Celkem statusů</th>
+                </tr>
+              </thead>
+              <tbody id="adminProfilesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
       <section class="news-section">
         <div class="section-header">
