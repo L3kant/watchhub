@@ -48,9 +48,14 @@ CREATE TABLE IF NOT EXISTS title_services (
 ) STRICT;
 
 CREATE TABLE IF NOT EXISTS media_genres (
-  genre_id INTEGER PRIMARY KEY,
-  genre_name TEXT NOT NULL UNIQUE
+  genre_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  genre_name TEXT NOT NULL,
+  tmdb_genre_id INTEGER,
+  media_type TEXT
 ) STRICT;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_media_genres_tmdb_type
+ON media_genres (tmdb_genre_id, media_type);
 
 CREATE TABLE IF NOT EXISTS title_genres (
   title_id INTEGER NOT NULL,
