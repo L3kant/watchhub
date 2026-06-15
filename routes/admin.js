@@ -367,4 +367,127 @@ router.get('/external-links', (req, res) => {
   }
 });
 
+function parseBlockedServices(value) {
+  if (!value) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .map((serviceId) => Number(serviceId))
+      .filter((serviceId) => Number.isInteger(serviceId) && serviceId > 0);
+  } catch (error) {
+    return [];
+  }
+}
+
+router.get('/profiles', (req, res) => {
+  try {
+    const rows = db
+      .prepare(`
+        SELECT
+          p.profile_id,
+          p.profile_name,
+          p.max_age_rating,
+          p.blocked_services_json,
+          p.is_admin,
+          p.avatar_key,
+          p.color_key,
+          p.active_flag,
+          p.created_at,
+          p.updated_at,
+
+          COUNT(pts.title_id) AS statuses_count,
+
+          SUM(
+            CASE
+              WHEN pts.status = 'planned' THEN 1
+              ELSE 0
+            END
+          ) AS planned_count,
+
+          SUM(
+            CASE
+              WHEN pts.status = 'watching' THEN 1
+              ELSE 0
+            END
+          ) AS watching_count,
+
+          SUM(
+            CASE
+              WHEN pts.status = 'watched' THEN 1
+              ELSE 0
+            END
+          ) AS watched_count,
+
+          SUM(
+            CASE
+              WHEN pts.status = 'hidden' THEN 1
+              ELSE 0
+            END
+          ) AS hidden_count
+
+        FROM user_profiles p
+        LEFT JOIN profile_title_statuses pts
+          ON pts.profile_id = p.profile_id
+
+        GROUP BY
+          p.profile_id,
+          p.profile_name,
+          p.max_age_rating,
+          p.blocked_services_json,
+          p.is_admin,
+          p.avatar_key,
+          p.color_key,
+          p.active_flag,
+          p.created_at,
+          p.updated_at
+
+        ORDER BY
+          p.active_flag DESC,
+          p.is_admin DESC,
+          p.profile_name ASC
+      `)
+      .all();
+
+    const profiles = rows.map((row) => {
+      const blockedServices = parseBlockedServices(row.blocked_services_json);
+
+      return {
+        profile_id: row.profile_id,
+        profile_name: row.profile_name,
+        max_age_rating: row.max_age_rating,
+        blocked_services: blockedServices,
+        blocked_services_count: blockedServices.length,
+        is_admin: Boolean(row.is_admin),
+        avatar_key: row.avatar_key,
+        color_key: row.color_key,
+        active_flag: Boolean(row.active_flag),
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+
+        statuses_count: Number(row.statuses_count || 0),
+        planned_count: Number(row.planned_count || 0),
+        watching_count: Number(row.watching_count || 0),
+        watched_count: Number(row.watched_count || 0),
+        hidden_count: Number(row.hidden_count || 0)
+      };
+    });
+
+    res.json({ data: profiles });
+  } catch (error) {
+    console.error('Failed to load admin profiles:', error);
+
+    res.status(500).json({
+      error: 'Failed to load admin profiles'
+    });
+  }
+});
+
 module.exports = router;
