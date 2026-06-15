@@ -188,6 +188,154 @@ function parseBlockedServices(value) {
   }
 }
 
+function parseProfileId(value) {
+  const parsedValue = Number(value);
+
+  if (!Number.isInteger(parsedValue) || parsedValue < 1) {
+    const error = new Error('profileId must be a positive number.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return parsedValue;
+}
+
+function parseOptionalBooleanFlag(value, fieldName) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === true || value === 1 || value === '1') {
+    return 1;
+  }
+
+  if (value === false || value === 0 || value === '0') {
+    return 0;
+  }
+
+  const error = new Error(`${fieldName} must be a boolean flag.`);
+  error.statusCode = 400;
+  throw error;
+}
+
+function assertProfileNameAvailable(profileName, currentProfileId) {
+  const existingProfile = db
+    .prepare(`
+      SELECT profile_id
+      FROM user_profiles
+      WHERE profile_name = ?
+        AND profile_id != ?
+    `)
+    .get(profileName, currentProfileId);
+
+  if (existingProfile) {
+    const error = new Error('Profile name already exists.');
+    error.statusCode = 409;
+    throw error;
+  }
+}
+
+router.patch('/:profileId', (req, res) => {
+  try {
+    const profileId = parseProfileId(req.params.profileId);
+    const currentProfile = getProfileById(profileId);
+
+    if (!currentProfile) {
+      return res.status(404).json({
+        error: 'Profile not found.',
+      });
+    }
+
+    const nextProfileName =
+      req.body.profile_name === undefined
+        ? currentProfile.profile_name
+        : normalizeProfileName(req.body.profile_name);
+
+    if (nextProfileName.length < 1 || nextProfileName.length > 40) {
+      return res.status(400).json({
+        error: 'profile_name must be 1 to 40 characters long.',
+      });
+    }
+
+    assertProfileNameAvailable(nextProfileName, profileId);
+
+    const nextMaxAgeRating =
+      req.body.max_age_rating === undefined
+        ? currentProfile.max_age_rating
+        : parseMaxAgeRating(req.body.max_age_rating);
+
+    const nextBlockedServices =
+      req.body.blocked_services === undefined
+        ? currentProfile.blocked_services
+        : parseBlockedServicesInput(req.body.blocked_services);
+
+    validateServicesExist(nextBlockedServices);
+
+    const nextAvatarKey =
+      req.body.avatar_key === undefined
+        ? currentProfile.avatar_key
+        : normalizeOptionalKey(req.body.avatar_key, currentProfile.avatar_key || 'default');
+
+    const nextColorKey =
+      req.body.color_key === undefined
+        ? currentProfile.color_key
+        : normalizeOptionalKey(req.body.color_key, currentProfile.color_key || 'blue');
+
+    const parsedActiveFlag = parseOptionalBooleanFlag(
+      req.body.active_flag,
+      'active_flag'
+    );
+
+    const nextActiveFlag =
+      parsedActiveFlag === undefined
+        ? Number(currentProfile.active_flag)
+        : parsedActiveFlag;
+
+    if (currentProfile.is_admin && nextActiveFlag === 0) {
+      return res.status(400).json({
+        error: 'Admin profile cannot be deactivated.',
+      });
+    }
+
+    db.prepare(`
+      UPDATE user_profiles
+      SET
+        profile_name = ?,
+        max_age_rating = ?,
+        blocked_services_json = ?,
+        avatar_key = ?,
+        color_key = ?,
+        active_flag = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE profile_id = ?
+    `).run(
+      nextProfileName,
+      nextMaxAgeRating,
+      JSON.stringify(nextBlockedServices),
+      nextAvatarKey,
+      nextColorKey,
+      nextActiveFlag,
+      profileId
+    );
+
+    const updatedProfile = getProfileById(profileId);
+
+    return res.json({
+      data: updatedProfile,
+    });
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+
+    if (statusCode >= 500) {
+      console.error('Failed to update profile:', error);
+    }
+
+    return res.status(statusCode).json({
+      error: error.message || 'Failed to update profile.',
+    });
+  }
+});
+
 router.post('/', (req, res) => {
   try {
     const profileName = normalizeProfileName(req.body.profile_name);
