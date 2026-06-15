@@ -1,5 +1,8 @@
 const express = require('express');
 const db = require('../database/db');
+const {
+  getLocalQuotaStatus
+} = require('../clients/movieOfTheNightClient');
 
 const router = express.Router();
 
@@ -486,6 +489,25 @@ router.get('/profiles', (req, res) => {
 
     res.status(500).json({
       error: 'Failed to load admin profiles'
+    });
+  }
+});
+
+router.get('/movie-of-the-night/quota', (req, res) => {
+  try {
+    const quota = getLocalQuotaStatus();
+
+    res.json({
+      data: {
+        provider: 'movie_of_the_night',
+        quota,
+      },
+    });
+  } catch (error) {
+    console.error('Failed to load Movie of the Night quota:', error);
+
+    res.status(500).json({
+      error: 'Failed to load Movie of the Night quota',
     });
   }
 });
