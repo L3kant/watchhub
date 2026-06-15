@@ -1186,13 +1186,17 @@ router.get('/', (req, res) => {
           mt.poster_path,
           mt.rating_value,
           mt.runtime_minutes,
-          mt.original_language
+          mt.original_language,
+            pts.status AS profile_status
         FROM media_titles mt
+        LEFT JOIN profile_title_statuses pts
+  ON pts.title_id = mt.title_id
+  AND pts.profile_id = ?
         ${whereSql}
         ORDER BY mt.rating_value DESC, mt.display_title ASC
         LIMIT ?
       `)
-      .all(...params, limit);
+      .all(profileId || null, ...params, limit);
 
     if (titles.length === 0) {
   return res.json({
