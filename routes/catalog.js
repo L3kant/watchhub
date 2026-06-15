@@ -310,6 +310,10 @@ function buildCatalogWhereClause(filters, profile) {
   const params = [];
   const blockedServices = profile?.blocked_services || [];
 
+  conditions.push(`
+  (pts.status IS NULL OR pts.status != 'hidden')
+`);
+
   if (filters.search !== '') {
     conditions.push(`
       (
