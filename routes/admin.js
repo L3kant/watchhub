@@ -1,8 +1,6 @@
-const express = require('express');
-const db = require('../database/db');
-const {
-  getLocalQuotaStatus
-} = require('../clients/movieOfTheNightClient');
+const express = require("express");
+const db = require("../database/db");
+const { getLocalQuotaStatus } = require("../clients/movieOfTheNightClient");
 
 const router = express.Router();
 
@@ -15,10 +13,10 @@ function getCount(sql, params = []) {
   return Number(getValue(sql, params) || 0);
 }
 
-router.get('/status', (req, res) => {
+router.get("/status", (req, res) => {
   try {
     const status = {
-      status: 'ok',
+      status: "ok",
       generated_at: new Date().toISOString(),
 
       services_count: getCount(`
@@ -37,17 +35,23 @@ router.get('/status', (req, res) => {
         FROM media_titles
       `),
 
-      movies_count: getCount(`
+      movies_count: getCount(
+        `
         SELECT COUNT(*) AS value
         FROM media_titles
         WHERE media_type = ?
-      `, ['movie']),
+      `,
+        ["movie"],
+      ),
 
-      series_count: getCount(`
+      series_count: getCount(
+        `
         SELECT COUNT(*) AS value
         FROM media_titles
         WHERE media_type = ?
-      `, ['tv']),
+      `,
+        ["tv"],
+      ),
 
       profiles_count: getCount(`
         SELECT COUNT(*) AS value
@@ -65,23 +69,32 @@ router.get('/status', (req, res) => {
         FROM profile_title_statuses
       `),
 
-      planned_count: getCount(`
+      planned_count: getCount(
+        `
         SELECT COUNT(*) AS value
         FROM profile_title_statuses
         WHERE status = ?
-      `, ['planned']),
+      `,
+        ["planned"],
+      ),
 
-      watched_count: getCount(`
+      watched_count: getCount(
+        `
         SELECT COUNT(*) AS value
         FROM profile_title_statuses
         WHERE status = ?
-      `, ['watched']),
+      `,
+        ["watched"],
+      ),
 
-      hidden_count: getCount(`
+      hidden_count: getCount(
+        `
         SELECT COUNT(*) AS value
         FROM profile_title_statuses
         WHERE status = ?
-      `, ['hidden']),
+      `,
+        ["hidden"],
+      ),
 
       external_links_count: getCount(`
         SELECT COUNT(*) AS value
@@ -98,23 +111,24 @@ router.get('/status', (req, res) => {
       latest_external_url_synced_at: getValue(`
         SELECT MAX(external_url_synced_at) AS value
         FROM title_services
-      `)
+      `),
     };
 
     res.json({ data: status });
   } catch (error) {
-    console.error('Failed to load admin status:', error);
+    console.error("Failed to load admin status:", error);
 
     res.status(500).json({
-      error: 'Failed to load admin status'
+      error: "Failed to load admin status",
     });
   }
 });
 
-router.get('/services', (req, res) => {
+router.get("/services", (req, res) => {
   try {
     const rows = db
-      .prepare(`
+      .prepare(
+        `
         SELECT
           s.service_id,
           s.service_name,
@@ -173,7 +187,8 @@ router.get('/services', (req, res) => {
           s.active_flag
 
         ORDER BY s.service_name ASC
-      `)
+      `,
+      )
       .all();
 
     const services = rows.map((row) => ({
@@ -190,23 +205,24 @@ router.get('/services', (req, res) => {
       external_links_count: Number(row.external_links_count || 0),
 
       latest_title_service_created_at: row.latest_title_service_created_at,
-      latest_external_url_synced_at: row.latest_external_url_synced_at
+      latest_external_url_synced_at: row.latest_external_url_synced_at,
     }));
 
     res.json({ data: services });
   } catch (error) {
-    console.error('Failed to load admin services:', error);
+    console.error("Failed to load admin services:", error);
 
     res.status(500).json({
-      error: 'Failed to load admin services'
+      error: "Failed to load admin services",
     });
   }
 });
 
-router.get('/external-links', (req, res) => {
+router.get("/external-links", (req, res) => {
   try {
     const summary = db
-      .prepare(`
+      .prepare(
+        `
         SELECT
           COUNT(*) AS title_services_count,
 
@@ -232,11 +248,13 @@ router.get('/external-links', (req, res) => {
           MAX(external_url_synced_at) AS latest_external_url_synced_at
 
         FROM title_services
-      `)
+      `,
+      )
       .get();
 
     const byServiceRows = db
-      .prepare(`
+      .prepare(
+        `
         SELECT
           s.service_id,
           s.service_name,
@@ -275,11 +293,13 @@ router.get('/external-links', (req, res) => {
           s.motn_service_id
 
         ORDER BY s.service_name ASC
-      `)
+      `,
+      )
       .all();
 
     const bySourceRows = db
-      .prepare(`
+      .prepare(
+        `
         SELECT
           COALESCE(external_url_source, 'unknown') AS source,
           COUNT(*) AS external_links_count,
@@ -294,11 +314,13 @@ router.get('/external-links', (req, res) => {
         GROUP BY COALESCE(external_url_source, 'unknown')
 
         ORDER BY external_links_count DESC
-      `)
+      `,
+      )
       .all();
 
     const recentRows = db
-      .prepare(`
+      .prepare(
+        `
         SELECT
           mt.title_id,
           mt.display_title,
@@ -319,7 +341,8 @@ router.get('/external-links', (req, res) => {
 
         ORDER BY ts.external_url_synced_at DESC
         LIMIT 10
-      `)
+      `,
+      )
       .all();
 
     res.json({
@@ -327,9 +350,11 @@ router.get('/external-links', (req, res) => {
         summary: {
           title_services_count: Number(summary.title_services_count || 0),
           external_links_count: Number(summary.external_links_count || 0),
-          missing_external_links_count: Number(summary.missing_external_links_count || 0),
+          missing_external_links_count: Number(
+            summary.missing_external_links_count || 0,
+          ),
           oldest_external_url_synced_at: summary.oldest_external_url_synced_at,
-          latest_external_url_synced_at: summary.latest_external_url_synced_at
+          latest_external_url_synced_at: summary.latest_external_url_synced_at,
         },
 
         by_service: byServiceRows.map((row) => ({
@@ -338,16 +363,18 @@ router.get('/external-links', (req, res) => {
           motn_service_id: row.motn_service_id,
           title_services_count: Number(row.title_services_count || 0),
           external_links_count: Number(row.external_links_count || 0),
-          missing_external_links_count: Number(row.missing_external_links_count || 0),
+          missing_external_links_count: Number(
+            row.missing_external_links_count || 0,
+          ),
           oldest_external_url_synced_at: row.oldest_external_url_synced_at,
-          latest_external_url_synced_at: row.latest_external_url_synced_at
+          latest_external_url_synced_at: row.latest_external_url_synced_at,
         })),
 
         by_source: bySourceRows.map((row) => ({
           source: row.source,
           external_links_count: Number(row.external_links_count || 0),
           oldest_external_url_synced_at: row.oldest_external_url_synced_at,
-          latest_external_url_synced_at: row.latest_external_url_synced_at
+          latest_external_url_synced_at: row.latest_external_url_synced_at,
         })),
 
         recent_links: recentRows.map((row) => ({
@@ -357,15 +384,15 @@ router.get('/external-links', (req, res) => {
           service_id: row.service_id,
           service_name: row.service_name,
           external_url_source: row.external_url_source,
-          external_url_synced_at: row.external_url_synced_at
-        }))
-      }
+          external_url_synced_at: row.external_url_synced_at,
+        })),
+      },
     });
   } catch (error) {
-    console.error('Failed to load admin external links:', error);
+    console.error("Failed to load admin external links:", error);
 
     res.status(500).json({
-      error: 'Failed to load admin external links'
+      error: "Failed to load admin external links",
     });
   }
 });
@@ -390,10 +417,11 @@ function parseBlockedServices(value) {
   }
 }
 
-router.get('/profiles', (req, res) => {
+router.get("/profiles", (req, res) => {
   try {
     const rows = db
-      .prepare(`
+      .prepare(
+        `
         SELECT
           p.profile_id,
           p.profile_name,
@@ -406,7 +434,12 @@ router.get('/profiles', (req, res) => {
           p.created_at,
           p.updated_at,
 
-          COUNT(pts.title_id) AS statuses_count,
+          SUM(
+            CASE
+              WHEN pts.status IN ('planned', 'watched', 'hidden') THEN 1
+              ELSE 0
+            END
+          ) AS statuses_count,
 
           SUM(
             CASE
@@ -456,7 +489,8 @@ router.get('/profiles', (req, res) => {
           p.active_flag DESC,
           p.is_admin DESC,
           p.profile_name ASC
-      `)
+      `,
+      )
       .all();
 
     const profiles = rows.map((row) => {
@@ -479,35 +513,35 @@ router.get('/profiles', (req, res) => {
         planned_count: Number(row.planned_count || 0),
         watching_count: Number(row.watching_count || 0),
         watched_count: Number(row.watched_count || 0),
-        hidden_count: Number(row.hidden_count || 0)
+        hidden_count: Number(row.hidden_count || 0),
       };
     });
 
     res.json({ data: profiles });
   } catch (error) {
-    console.error('Failed to load admin profiles:', error);
+    console.error("Failed to load admin profiles:", error);
 
     res.status(500).json({
-      error: 'Failed to load admin profiles'
+      error: "Failed to load admin profiles",
     });
   }
 });
 
-router.get('/movie-of-the-night/quota', (req, res) => {
+router.get("/movie-of-the-night/quota", (req, res) => {
   try {
     const quota = getLocalQuotaStatus();
 
     res.json({
       data: {
-        provider: 'movie_of_the_night',
+        provider: "movie_of_the_night",
         quota,
       },
     });
   } catch (error) {
-    console.error('Failed to load Movie of the Night quota:', error);
+    console.error("Failed to load Movie of the Night quota:", error);
 
     res.status(500).json({
-      error: 'Failed to load Movie of the Night quota',
+      error: "Failed to load Movie of the Night quota",
     });
   }
 });
