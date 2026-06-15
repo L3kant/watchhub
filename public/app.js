@@ -693,6 +693,7 @@ async function refreshExternalLinks(titleId, button) {
 
     await loadTitleDetail(titleId);
     await loadAdminStatus();
+    await loadAdminServices();
 
     if (result.data.updated_count === 0) {
       alert(
@@ -806,6 +807,74 @@ async function loadTitleDetail(titleId) {
   } catch (error) {
     console.error("Failed to load title detail:", error);
     showDetailError();
+  }
+}
+
+function renderAdminServices(services) {
+  const message = document.querySelector("#adminServicesMessage");
+  const tableBody = document.querySelector("#adminServicesTableBody");
+
+  if (!message || !tableBody) {
+    return;
+  }
+
+  if (!Array.isArray(services) || services.length === 0) {
+    message.textContent = "Nejsou dostupná žádná data o službách.";
+    tableBody.innerHTML = "";
+    return;
+  }
+
+  tableBody.innerHTML = services
+    .map((service) => {
+      const activeText = service.active_flag ? "Aktivní" : "Neaktivní";
+
+      return `
+        <tr>
+          <td>
+            <strong>${escapeHtml(service.service_name)}</strong>
+            <div class="admin-table-subtext">
+              provider: ${escapeHtml(service.provider_key || "—")}
+              · MOTN: ${escapeHtml(service.motn_service_id || "—")}
+            </div>
+          </td>
+          <td>${activeText}</td>
+          <td>${formatAdminNumber(service.titles_count)}</td>
+          <td>${formatAdminNumber(service.movies_count)}</td>
+          <td>${formatAdminNumber(service.series_count)}</td>
+          <td>${formatAdminNumber(service.external_links_count)}</td>
+          <td>${formatAdminDate(service.latest_external_url_synced_at)}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  message.textContent = `Načteno služeb: ${services.length}`;
+}
+
+async function loadAdminServices() {
+  const message = document.querySelector("#adminServicesMessage");
+  const tableBody = document.querySelector("#adminServicesTableBody");
+
+  if (!message || !tableBody) {
+    return;
+  }
+
+  message.textContent = "Načítám přehled služeb...";
+
+  try {
+    const response = await fetch("/api/admin/services");
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(payload.error || "Nepodařilo se načíst služby.");
+    }
+
+    renderAdminServices(payload.data);
+  } catch (error) {
+    console.error("Failed to load admin services:", error);
+
+    message.textContent = error.message || "Přehled služeb se nepodařilo načíst.";
+    tableBody.innerHTML = "";
   }
 }
 
@@ -1186,7 +1255,10 @@ if (refreshWatchedButton) {
 }
 
 if (refreshAdminButton) {
-  refreshAdminButton.addEventListener("click", loadAdminStatus);
+  refreshAdminButton.addEventListener("click", async () => {
+    await loadAdminStatus();
+    await loadAdminServices();
+  });
 }
 
 searchInput.addEventListener("input", loadCatalog);
@@ -1220,6 +1292,7 @@ async function initApp() {
     await loadWatchedList();
     await loadCatalog();
     await loadAdminStatus();
+    await loadAdminServices();
   } catch (error) {
     console.error("Failed to initialize app:", error);
 
