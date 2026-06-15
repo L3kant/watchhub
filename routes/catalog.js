@@ -716,6 +716,177 @@ router.get('/new-movies', (req, res) => {
   }
 });
 
+router.get('/new-series', (req, res) => {
+  try {
+    const profileId = parseOptionalPositiveInteger(req.query.profile, 'profile');
+    const profile = getProfile(profileId);
+
+    const service = parseService(req.query.service);
+    const limit = parseLimit(req.query.limit);
+
+    const blockedServices = profile?.blocked_services || [];
+    const conditions = [
+      "mt.media_type = 'tv'",
+      'mt.first_air_date IS NOT NULL',
+      "mt.first_air_date != ''",
+    ];
+    const params = [];
+
+    if (service !== '') {
+      conditions.push(`
+        EXISTS (
+          SELECT 1
+          FROM title_services ts_filter
+          JOIN streaming_services ss_filter
+            ON ss_filter.service_id = ts_filter.service_id
+          WHERE ts_filter.title_id = mt.title_id
+            AND ss_filter.active_flag = 1
+            AND (ss_filter.service_name = ? OR CAST(ss_filter.service_id AS TEXT) = ?)
+        )
+      `);
+
+      params.push(service, service);
+    }
+
+    if (profile) {
+      conditions.push(`
+        (
+          mt.age_rating IS NULL
+          OR mt.age_rating <= ?
+        )
+      `);
+      params.push(profile.max_age_rating);
+
+      if (profile.max_age_rating < 18) {
+        conditions.push('COALESCE(mt.adult_flag, 0) = 0');
+      }
+
+      if (blockedServices.length > 0) {
+        conditions.push(`
+          EXISTS (
+            SELECT 1
+            FROM title_services ts_profile
+            JOIN streaming_services ss_profile
+              ON ss_profile.service_id = ts_profile.service_id
+            WHERE ts_profile.title_id = mt.title_id
+              AND ss_profile.active_flag = 1
+              AND ts_profile.service_id NOT IN (${blockedServices.map(() => '?').join(', ')})
+          )
+        `);
+
+        params.push(...blockedServices);
+      }
+    }
+
+    const series = db
+      .prepare(`
+        SELECT
+          mt.title_id,
+          mt.tmdb_id,
+          mt.media_type,
+          mt.display_title,
+          mt.original_title,
+          mt.release_year,
+          mt.first_air_date,
+          mt.last_air_date,
+          mt.latest_season_air_date,
+          mt.age_rating,
+          mt.age_rating_country,
+          mt.adult_flag,
+          mt.poster_path,
+          mt.rating_value,
+          mt.runtime_minutes,
+          mt.original_language
+        FROM media_titles mt
+        WHERE ${conditions.join(' AND ')}
+        ORDER BY
+          date(mt.first_air_date) DESC,
+          mt.display_title COLLATE NOCASE ASC
+        LIMIT ?
+      `)
+      .all(...params, limit);
+
+    if (series.length === 0) {
+      return res.json({
+        filters: {
+          service,
+        },
+        profile,
+        count: 0,
+        data: [],
+      });
+    }
+
+    const titleIds = series.map((item) => item.title_id);
+    const placeholders = titleIds.map(() => '?').join(', ');
+    const serviceParams = [...titleIds];
+    let blockedServicesSql = '';
+
+    if (blockedServices.length > 0) {
+      blockedServicesSql = `
+        AND ts.service_id NOT IN (${blockedServices.map(() => '?').join(', ')})
+      `;
+
+      serviceParams.push(...blockedServices);
+    }
+
+    const serviceRows = db
+      .prepare(`
+        SELECT
+          ts.title_id,
+          ss.service_id,
+          ss.service_name,
+          ts.official_url
+        FROM title_services ts
+        JOIN streaming_services ss
+          ON ss.service_id = ts.service_id
+        WHERE ts.title_id IN (${placeholders})
+          AND ss.active_flag = 1
+          ${blockedServicesSql}
+        ORDER BY ss.service_name ASC
+      `)
+      .all(...serviceParams);
+
+    const servicesByTitleId = new Map();
+
+    for (const row of serviceRows) {
+      if (!servicesByTitleId.has(row.title_id)) {
+        servicesByTitleId.set(row.title_id, []);
+      }
+
+      servicesByTitleId.get(row.title_id).push({
+        service_id: row.service_id,
+        service_name: row.service_name,
+        official_url: row.official_url,
+      });
+    }
+
+    const data = series.map((item) => ({
+      ...item,
+      services: servicesByTitleId.get(item.title_id) || [],
+    }));
+
+    return res.json({
+      filters: {
+        service,
+      },
+      profile,
+      count: data.length,
+      data,
+    });
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+
+    if (statusCode >= 500) {
+      console.error('Failed to load new series:', error);
+    }
+
+    return res.status(statusCode).json({
+      error: error.message || 'Failed to load new series.',
+    });
+  }
+});
+
 router.get('/:titleId', (req, res) => {
   const titleId = Number(req.params.titleId);
 
