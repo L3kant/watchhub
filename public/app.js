@@ -7,6 +7,10 @@ const genreFilter = document.querySelector('#genreFilter');
 const catalogStatus = document.querySelector('#catalogStatus');
 const titleModal = document.querySelector('#titleModal');
 const closeTitleModalButton = document.querySelector('#closeTitleModal');
+const refreshNewsButton = document.getElementById('refreshNewsButton');
+const newsStatus = document.getElementById('newsStatus');
+const newsGrid = document.getElementById('newsGrid');
+const newsTabs = document.querySelectorAll('.news-tab');
 
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w342';
 
@@ -16,6 +20,7 @@ const profileSelect = document.querySelector('#profileSelect');
 
 let profiles = [];
 let activeProfileId = null;
+let activeNewsEndpoint = '/api/catalog/new';
 
 let currentTitles = [];
 
@@ -44,7 +49,8 @@ function formatDate(value) {
     return null;
   }
 
-  const parts = value.split('-');
+  const dateOnly = value.trim().slice(0, 10);
+  const parts = dateOnly.split('-');
 
   if (parts.length !== 3) {
     return null;
@@ -314,6 +320,58 @@ function renderCatalog(titles) {
   }
 
   catalogStatus.textContent = `Zobrazeno titulů: ${titles.length}`;
+}
+
+function createNewsCard(item) {
+  const card = document.createElement('article');
+  card.className = 'title-card';
+  card.tabIndex = 0;
+
+  const poster = createPoster(item, 'title-poster');
+
+  const heading = document.createElement('h3');
+  heading.textContent = item.display_title;
+
+  const meta = document.createElement('p');
+  meta.textContent = `${getTypeLabel(item.media_type)} · ${getCardDateText(item)}`;
+
+  const services = document.createElement('div');
+  services.className = 'badge-list';
+
+  if (item.service_name) {
+    services.appendChild(createBadge(item.service_name));
+  }
+
+  for (const service of item.services || []) {
+    services.appendChild(createBadge(service.service_name));
+  }
+
+  const extraInfo = document.createElement('div');
+  extraInfo.className = 'badge-list';
+
+  if (item.available_since) {
+    const availableDate = formatDate(item.available_since) || item.available_since;
+    extraInfo.appendChild(createBadge(`Dostupné od ${availableDate}`, true));
+  }
+
+  card.appendChild(poster);
+  card.appendChild(heading);
+  card.appendChild(meta);
+  card.appendChild(services);
+  card.appendChild(extraInfo);
+
+  card.addEventListener('click', () => {
+    loadTitleDetail(item.title_id);
+  });
+
+  card.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      loadTitleDetail(item.title_id);
+    }
+  });
+
+  return card;
 }
 
 function renderDetail(title) {
@@ -601,6 +659,46 @@ async function loadCatalog() {
     catalogElement.innerHTML = '<p>Zkontroluj, že běží server a endpoint /api/catalog.</p>';
   }
 }
+
+async function loadNews() {
+  if (!newsGrid || !newsStatus) {
+    return;
+  }
+
+  newsStatus.textContent = 'Načítám novinky...';
+  newsGrid.innerHTML = '';
+
+  const params = new URLSearchParams();
+  params.set('limit', '12');
+
+  if (activeProfileId) {
+    params.set('profile', activeProfileId);
+  }
+
+  try {
+    const response = await fetch(`${activeNewsEndpoint}?${params.toString()}`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Nepodařilo se načíst novinky.');
+    }
+
+if (!result.data || result.data.length === 0) {
+  newsStatus.textContent = 'Zatím nejsou dostupné žádné novinky.';
+  return;
+}
+
+newsStatus.textContent = '';
+
+for (const item of result.data) {
+  newsGrid.appendChild(createNewsCard(item));
+}
+  } catch (error) {
+    console.error('Failed to load news:', error);
+    newsStatus.textContent = error.message || 'Nepodařilo se načíst novinky.';
+  }
+}
+
 if (profileSelect) {
   profileSelect.addEventListener('change', () => {
     const selectedProfileId = Number(profileSelect.value);
@@ -614,8 +712,34 @@ if (profileSelect) {
     }
 
     loadCatalog();
+    loadNews();
   });
 }
+
+for (const tab of newsTabs) {
+  tab.addEventListener('click', () => {
+    const endpoint = tab.dataset.newsEndpoint;
+
+    if (!endpoint) {
+      return;
+    }
+
+    activeNewsEndpoint = endpoint;
+
+    for (const otherTab of newsTabs) {
+      otherTab.classList.remove('is-active');
+    }
+
+    tab.classList.add('is-active');
+
+    loadNews();
+  });
+}
+
+if (refreshNewsButton) {
+  refreshNewsButton.addEventListener('click', loadNews);
+}
+
 searchInput.addEventListener('input', loadCatalog);
 serviceFilter.addEventListener('change', loadCatalog);
 typeFilter.addEventListener('change', loadCatalog);
@@ -639,6 +763,7 @@ async function initApp() {
   try {
     await loadProfiles();
     await loadGenres();
+    await loadNews();
     await loadCatalog();
   } catch (error) {
     console.error('Failed to initialize app:', error);

@@ -53,12 +53,53 @@
         </select>
       </section>
 
+      <section class="news-section">
+  <div class="section-header">
+    <div>
+      <h2>Novinky</h2>
+      <p>Nově dostupné a nově vydané tituly.</p>
+    </div>
+
+    <button id="refreshNewsButton" type="button">
+      Obnovit novinky
+    </button>
+  </div>
+
+  <div class="news-tabs" role="tablist" aria-label="Typ novinek">
+    <button
+      class="news-tab is-active"
+      type="button"
+      data-news-endpoint="/api/catalog/new"
+    >
+      Nově dostupné
+    </button>
+
+    <button
+      class="news-tab"
+      type="button"
+      data-news-endpoint="/api/catalog/new-movies"
+    >
+      Nové filmy
+    </button>
+
+    <button
+      class="news-tab"
+      type="button"
+      data-news-endpoint="/api/catalog/new-series"
+    >
+      Nové seriály
+    </button>
+  </div>
+
+  <p id="newsStatus" class="catalog-status">Načítám novinky...</p>
+  <div id="newsGrid" class="catalog"></div>
+</section>
+
       <section>
         <h2>Katalog</h2>
         <p id="catalogStatus" class="catalog-status">Načítám katalog...</p>
         <div id="catalog" class="catalog"></div>
       </section>
-    </section>
   </main>
 
   <div id="titleModal" class="modal" hidden>
