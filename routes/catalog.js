@@ -900,33 +900,35 @@ router.get('/:titleId', (req, res) => {
     const profileId = parseOptionalPositiveInteger(req.query.profile, 'profile');
     const profile = getProfile(profileId);
 
-    const title = db
-      .prepare(`
-        SELECT
-          title_id,
-          tmdb_id,
-          media_type,
-          display_title,
-          original_title,
-          overview_text,
-          release_year,
-          release_date,
-          first_air_date,
-          last_air_date,
-          latest_season_air_date,
-          age_rating,
-          age_rating_country,
-          adult_flag,
-          poster_path,
-          rating_value,
-          runtime_minutes,
-          original_language,
-          created_at,
-          updated_at
-        FROM media_titles
-        WHERE title_id = ?
-      `)
-      .get(titleId);
+   const title = db
+  .prepare(`
+    SELECT
+      mt.title_id,
+      mt.tmdb_id,
+      mt.media_type,
+      mt.display_title,
+      mt.original_title,
+      mt.overview_text,
+      mt.release_year,
+      mt.release_date,
+      mt.first_air_date,
+      mt.last_air_date,
+      mt.latest_season_air_date,
+      mt.age_rating,
+      mt.age_rating_country,
+      mt.adult_flag,
+      mt.poster_path,
+      mt.rating_value,
+      mt.runtime_minutes,
+      mt.original_language,
+      pts.status AS profile_status
+    FROM media_titles mt
+    LEFT JOIN profile_title_statuses pts
+      ON pts.title_id = mt.title_id
+      AND pts.profile_id = ?
+    WHERE mt.title_id = ?
+  `)
+  .get(profileId || null, titleId);
 
     if (!title) {
       return res.status(404).json({
