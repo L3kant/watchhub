@@ -108,4 +108,96 @@ router.get('/status', (req, res) => {
   }
 });
 
+router.get('/services', (req, res) => {
+  try {
+    const rows = db
+      .prepare(`
+        SELECT
+          s.service_id,
+          s.service_name,
+          s.provider_key,
+          s.motn_service_id,
+          s.active_flag,
+
+          COUNT(ts.title_id) AS titles_count,
+
+          SUM(
+            CASE
+              WHEN mt.media_type = 'movie' THEN 1
+              ELSE 0
+            END
+          ) AS movies_count,
+
+          SUM(
+            CASE
+              WHEN mt.media_type = 'tv' THEN 1
+              ELSE 0
+            END
+          ) AS series_count,
+
+          SUM(
+            CASE
+              WHEN ts.official_url IS NOT NULL
+                AND TRIM(ts.official_url) <> ''
+              THEN 1
+              ELSE 0
+            END
+          ) AS official_links_count,
+
+          SUM(
+            CASE
+              WHEN ts.external_url IS NOT NULL
+                AND TRIM(ts.external_url) <> ''
+              THEN 1
+              ELSE 0
+            END
+          ) AS external_links_count,
+
+          MAX(ts.created_at) AS latest_title_service_created_at,
+          MAX(ts.external_url_synced_at) AS latest_external_url_synced_at
+
+        FROM streaming_services s
+        LEFT JOIN title_services ts
+          ON ts.service_id = s.service_id
+        LEFT JOIN media_titles mt
+          ON mt.title_id = ts.title_id
+
+        GROUP BY
+          s.service_id,
+          s.service_name,
+          s.provider_key,
+          s.motn_service_id,
+          s.active_flag
+
+        ORDER BY s.service_name ASC
+      `)
+      .all();
+
+    const services = rows.map((row) => ({
+      service_id: row.service_id,
+      service_name: row.service_name,
+      provider_key: row.provider_key,
+      motn_service_id: row.motn_service_id,
+      active_flag: Boolean(row.active_flag),
+
+      titles_count: Number(row.titles_count || 0),
+      movies_count: Number(row.movies_count || 0),
+      series_count: Number(row.series_count || 0),
+      official_links_count: Number(row.official_links_count || 0),
+      external_links_count: Number(row.external_links_count || 0),
+
+      latest_title_service_created_at: row.latest_title_service_created_at,
+      latest_external_url_synced_at: row.latest_external_url_synced_at
+    }));
+
+    res.json({ data: services });
+  } catch (error) {
+    console.error('Failed to load admin services:', error);
+
+    res.status(500).json({
+      error: 'Failed to load admin services'
+    });
+  }
+});
+
 module.exports = router;
