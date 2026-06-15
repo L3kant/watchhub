@@ -125,6 +125,20 @@ function createBadge(text, secondary = false) {
   return badge;
 }
 
+function createProfileStatusBadge(status) {
+  if (!status) {
+    return null;
+  }
+
+  const label = getProfileStatusLabel(status);
+
+  if (label === 'Bez stavu') {
+    return null;
+  }
+
+  return createBadge(label, true);
+}
+
 function createPoster(title, className) {
   if (!title.poster_path) {
     const placeholder = document.createElement('div');
@@ -364,9 +378,19 @@ function createCatalogCard(title) {
   rating.className = 'badge';
   rating.textContent = `Hodnocení ${formatRating(title.rating_value)}`;
 
+  const profileStatusBadge = createProfileStatusBadge(title.profile_status);
+
   card.appendChild(poster);
   card.appendChild(heading);
   card.appendChild(meta);
+
+  if (profileStatusBadge) {
+    const profileStatusList = document.createElement('div');
+    profileStatusList.className = 'badge-list';
+    profileStatusList.appendChild(profileStatusBadge);
+    card.appendChild(profileStatusList);
+  }
+
   card.appendChild(services);
   card.appendChild(genres);
   card.appendChild(rating);
@@ -431,6 +455,12 @@ function createNewsCard(item) {
   if (item.available_since) {
     const availableDate = formatDate(item.available_since) || item.available_since;
     extraInfo.appendChild(createBadge(`Dostupné od ${availableDate}`, true));
+  }
+
+  const profileStatusBadge = createProfileStatusBadge(item.profile_status);
+
+  if (profileStatusBadge) {
+    extraInfo.appendChild(profileStatusBadge);
   }
 
   card.appendChild(poster);
