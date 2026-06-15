@@ -627,3 +627,14 @@ body.modal-open {
   color: #9ca3af;
   font-size: 0.8rem;
 }
+
+.admin-compact-grid {
+  margin-top: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.admin-subheading {
+  margin: 1.25rem 0 0.5rem;
+  color: #f9fafb;
+  font-size: 1rem;
+}

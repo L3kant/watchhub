@@ -738,6 +738,7 @@ async function refreshExternalLinks(titleId, button) {
     await loadTitleDetail(titleId);
     await loadAdminStatus();
     await loadAdminServices();
+    await loadAdminExternalLinks();
 
     if (result.data.updated_count === 0) {
       alert(
@@ -895,6 +896,144 @@ function renderAdminServices(services) {
     .join("");
 
   message.textContent = `Načteno služeb: ${services.length}`;
+}
+
+function renderAdminExternalLinks(data) {
+  const message = document.querySelector("#adminExternalLinksMessage");
+  const summaryElement = document.querySelector("#adminExternalLinksSummary");
+  const serviceTableBody = document.querySelector(
+    "#adminExternalLinksServiceTableBody",
+  );
+  const recentTableBody = document.querySelector(
+    "#adminExternalLinksRecentTableBody",
+  );
+
+  if (!message || !summaryElement || !serviceTableBody || !recentTableBody) {
+    return;
+  }
+
+  const summary = data && data.summary ? data.summary : {};
+  const byService = Array.isArray(data.by_service) ? data.by_service : [];
+  const recentLinks = Array.isArray(data.recent_links)
+    ? data.recent_links
+    : [];
+
+  summaryElement.innerHTML = [
+    renderAdminStatusCard(
+      "Vazby titul/služba",
+      formatAdminNumber(summary.title_services_count),
+      "celkem v title_services",
+    ),
+    renderAdminStatusCard(
+      "Uložené externí odkazy",
+      formatAdminNumber(summary.external_links_count),
+      "konkrétní odkazy v cache",
+    ),
+    renderAdminStatusCard(
+      "Chybějící externí odkazy",
+      formatAdminNumber(summary.missing_external_links_count),
+      "fallback odkazy stále povolené",
+    ),
+    renderAdminStatusCard(
+      "Poslední sync odkazu",
+      formatAdminDate(summary.latest_external_url_synced_at),
+      `nejstarší: ${formatAdminDate(summary.oldest_external_url_synced_at)}`,
+    ),
+  ].join("");
+
+  if (byService.length === 0) {
+    serviceTableBody.innerHTML = `
+      <tr>
+        <td colspan="5">Nejsou dostupná žádná data podle služby.</td>
+      </tr>
+    `;
+  } else {
+    serviceTableBody.innerHTML = byService
+      .map((service) => {
+        return `
+          <tr>
+            <td>
+              <strong>${escapeHtml(service.service_name)}</strong>
+              <div class="admin-table-subtext">
+                MOTN: ${escapeHtml(service.motn_service_id || "—")}
+              </div>
+            </td>
+            <td>${formatAdminNumber(service.title_services_count)}</td>
+            <td>${formatAdminNumber(service.external_links_count)}</td>
+            <td>${formatAdminNumber(service.missing_external_links_count)}</td>
+            <td>${formatAdminDate(service.latest_external_url_synced_at)}</td>
+          </tr>
+        `;
+      })
+      .join("");
+  }
+
+  if (recentLinks.length === 0) {
+    recentTableBody.innerHTML = `
+      <tr>
+        <td colspan="5">Zatím nejsou uložené žádné externí odkazy.</td>
+      </tr>
+    `;
+  } else {
+    recentTableBody.innerHTML = recentLinks
+      .map((item) => {
+        return `
+          <tr>
+            <td>
+              <strong>${escapeHtml(item.display_title)}</strong>
+              <div class="admin-table-subtext">
+                title_id: ${formatAdminNumber(item.title_id)}
+              </div>
+            </td>
+            <td>${escapeHtml(getTypeLabel(item.media_type))}</td>
+            <td>${escapeHtml(item.service_name)}</td>
+            <td>${escapeHtml(item.external_url_source || "—")}</td>
+            <td>${formatAdminDate(item.external_url_synced_at)}</td>
+          </tr>
+        `;
+      })
+      .join("");
+  }
+
+  message.textContent = "Přehled externích odkazů načten.";
+}
+
+async function loadAdminExternalLinks() {
+  const message = document.querySelector("#adminExternalLinksMessage");
+  const summaryElement = document.querySelector("#adminExternalLinksSummary");
+  const serviceTableBody = document.querySelector(
+    "#adminExternalLinksServiceTableBody",
+  );
+  const recentTableBody = document.querySelector(
+    "#adminExternalLinksRecentTableBody",
+  );
+
+  if (!message || !summaryElement || !serviceTableBody || !recentTableBody) {
+    return;
+  }
+
+  message.textContent = "Načítám přehled externích odkazů...";
+
+  try {
+    const response = await fetch("/api/admin/external-links");
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        payload.error || "Nepodařilo se načíst externí odkazy.",
+      );
+    }
+
+    renderAdminExternalLinks(payload.data);
+  } catch (error) {
+    console.error("Failed to load admin external links:", error);
+
+    message.textContent =
+      error.message || "Přehled externích odkazů se nepodařilo načíst.";
+    summaryElement.innerHTML = "";
+    serviceTableBody.innerHTML = "";
+    recentTableBody.innerHTML = "";
+  }
 }
 
 async function loadAdminServices() {
@@ -1334,6 +1473,7 @@ if (refreshAdminButton) {
     await loadAdminStatus();
     await loadAdminServices();
     await loadAdminProfiles();
+    await loadAdminExternalLinks();
   });
 }
 
@@ -1370,6 +1510,7 @@ async function initApp() {
     await loadAdminStatus();
     await loadAdminServices();
     await loadAdminProfiles();
+    await loadAdminExternalLinks();
   } catch (error) {
     console.error("Failed to initialize app:", error);
 
