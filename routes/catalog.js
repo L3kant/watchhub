@@ -457,8 +457,11 @@ router.get('/new', (req, res) => {
     }
 
     const blockedServices = profile?.blocked_services || [];
-    const conditions = ['ss.active_flag = 1'];
-    const params = [];
+    const conditions = [
+  'ss.active_flag = 1',
+  "(pts.status IS NULL OR pts.status != 'hidden')",
+];
+const params = [];
 
     if (service !== '') {
       conditions.push('(ss.service_name = ? OR CAST(ss.service_id AS TEXT) = ?)');
@@ -511,7 +514,7 @@ router.get('/new', (req, res) => {
           mt.rating_value,
           mt.runtime_minutes,
           mt.original_language,
-
+pts.status AS profile_status,
           ss.service_id,
           ss.service_name,
 
@@ -521,13 +524,16 @@ router.get('/new', (req, res) => {
           ON mt.title_id = ts.title_id
         JOIN streaming_services ss
           ON ss.service_id = ts.service_id
+          LEFT JOIN profile_title_statuses pts
+  ON pts.title_id = mt.title_id
+  AND pts.profile_id = ?
         WHERE ${conditions.join(' AND ')}
         ORDER BY
           datetime(ts.created_at) DESC,
           mt.display_title COLLATE NOCASE ASC
         LIMIT ?
       `)
-      .all(...params, limit);
+      .all(profileId || null, ...params, limit);
 
     return res.json({
       filters: {
@@ -561,10 +567,11 @@ router.get('/new-movies', (req, res) => {
 
     const blockedServices = profile?.blocked_services || [];
     const conditions = [
-      "mt.media_type = 'movie'",
-      'mt.release_date IS NOT NULL',
-      "mt.release_date != ''",
-    ];
+  "mt.media_type = 'movie'",
+  'mt.release_date IS NOT NULL',
+  "mt.release_date != ''",
+  "(pts.status IS NULL OR pts.status != 'hidden')",
+];
     const params = [];
 
     if (service !== '') {
@@ -629,15 +636,19 @@ router.get('/new-movies', (req, res) => {
           mt.poster_path,
           mt.rating_value,
           mt.runtime_minutes,
-          mt.original_language
+          mt.original_language,
+pts.status AS profile_status
         FROM media_titles mt
-        WHERE ${conditions.join(' AND ')}
+LEFT JOIN profile_title_statuses pts
+  ON pts.title_id = mt.title_id
+  AND pts.profile_id = ?
+WHERE ${conditions.join(' AND ')}
         ORDER BY
           date(mt.release_date) DESC,
           mt.display_title COLLATE NOCASE ASC
         LIMIT ?
       `)
-      .all(...params, limit);
+      .all(profileId || null, ...params, limit);
 
     if (movies.length === 0) {
       return res.json({
@@ -730,10 +741,11 @@ router.get('/new-series', (req, res) => {
 
     const blockedServices = profile?.blocked_services || [];
     const conditions = [
-      "mt.media_type = 'tv'",
-      'mt.first_air_date IS NOT NULL',
-      "mt.first_air_date != ''",
-    ];
+  "mt.media_type = 'tv'",
+  'mt.first_air_date IS NOT NULL',
+  "mt.first_air_date != ''",
+  "(pts.status IS NULL OR pts.status != 'hidden')",
+];
     const params = [];
 
     if (service !== '') {
@@ -800,15 +812,19 @@ router.get('/new-series', (req, res) => {
           mt.poster_path,
           mt.rating_value,
           mt.runtime_minutes,
-          mt.original_language
+          mt.original_language,
+pts.status AS profile_status
         FROM media_titles mt
-        WHERE ${conditions.join(' AND ')}
+LEFT JOIN profile_title_statuses pts
+  ON pts.title_id = mt.title_id
+  AND pts.profile_id = ?
+WHERE ${conditions.join(' AND ')}
         ORDER BY
           date(mt.first_air_date) DESC,
           mt.display_title COLLATE NOCASE ASC
         LIMIT ?
       `)
-      .all(...params, limit);
+      .all(profileId || null, ...params, limit);
 
     if (series.length === 0) {
       return res.json({
