@@ -13,7 +13,7 @@
 
   const { getProfileStatusLabel, getTypeLabel } = window.WatchHubLabels;
   const { createBadge, createPoster } = window.WatchHubDomHelpers;
-  const { formatRating } = window.WatchHubFormatters;
+  const { formatRating, formatDate } = window.WatchHubFormatters;
 
   function createProfileStatusBadge(status) {
     if (!status) {
@@ -100,8 +100,75 @@
     return card;
   }
 
+  function createNewsCard(item, options = {}) {
+    const { onOpenTitle, getCardDateText } = options;
+
+    const card = document.createElement('article');
+    card.className = 'title-card';
+    card.tabIndex = 0;
+
+    const poster = createPoster(item, 'title-poster');
+
+    const heading = document.createElement('h3');
+    heading.textContent = item.display_title;
+
+    const meta = document.createElement('p');
+    const dateText =
+      typeof getCardDateText === 'function'
+        ? getCardDateText(item)
+        : item.release_year || 'neznámé datum';
+
+    meta.textContent = `${getTypeLabel(item.media_type)} · ${dateText}`;
+
+    const services = document.createElement('div');
+    services.className = 'badge-list';
+
+    if (item.service_name) {
+      services.appendChild(createBadge(item.service_name));
+    }
+
+    for (const service of item.services || []) {
+      services.appendChild(createBadge(service.service_name));
+    }
+
+    const extraInfo = document.createElement('div');
+    extraInfo.className = 'badge-list';
+
+    if (item.available_since) {
+      const availableDate = formatDate(item.available_since) || item.available_since;
+      extraInfo.appendChild(createBadge(`Dostupné od ${availableDate}`, true));
+    }
+
+    const profileStatusBadge = createProfileStatusBadge(item.profile_status);
+
+    if (profileStatusBadge) {
+      extraInfo.appendChild(profileStatusBadge);
+    }
+
+    card.appendChild(poster);
+    card.appendChild(heading);
+    card.appendChild(meta);
+    card.appendChild(services);
+    card.appendChild(extraInfo);
+
+    if (typeof onOpenTitle === 'function') {
+      card.addEventListener('click', () => {
+        onOpenTitle(item.title_id);
+      });
+
+      card.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpenTitle(item.title_id);
+        }
+      });
+    }
+
+    return card;
+  }
+
   window.WatchHubRenderers = {
-    createProfileStatusBadge,
     createCatalogCard,
+    createNewsCard,
   };
 })();

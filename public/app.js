@@ -39,9 +39,9 @@ const { PROFILE_STORAGE_KEY, PROFILE_TITLE_STATUSES } = window.WatchHubConfig;
 
 const { getTypeLabel, getProfileStatusLabel } = window.WatchHubLabels;
 
-const { createBadge, createPoster, createInfoLine, isSafeExternalUrl } = window.WatchHubDomHelpers;
+const { createPoster, createInfoLine, isSafeExternalUrl } = window.WatchHubDomHelpers;
 
-const { createProfileStatusBadge, createCatalogCard } = window.WatchHubRenderers;
+const { createCatalogCard, createNewsCard } = window.WatchHubRenderers;
 
 const { fetchJson } = window.WatchHubApi;
 
@@ -348,6 +348,13 @@ function createAppCatalogCard(title) {
   });
 }
 
+function createAppNewsCard(item) {
+  return createNewsCard(item, {
+    getCardDateText,
+    onOpenTitle: loadTitleDetail,
+  });
+}
+
 function renderCatalog(titles) {
   catalogElement.innerHTML = '';
 
@@ -440,64 +447,6 @@ function renderAdminStatus({ status, quota }) {
 
   adminStatusGrid.innerHTML = cards.join('');
   adminStatusMessage.textContent = `Aktualizováno: ${formatAdminDate(status.generated_at)}`;
-}
-
-function createNewsCard(item) {
-  const card = document.createElement('article');
-  card.className = 'title-card';
-  card.tabIndex = 0;
-
-  const poster = createPoster(item, 'title-poster');
-
-  const heading = document.createElement('h3');
-  heading.textContent = item.display_title;
-
-  const meta = document.createElement('p');
-  meta.textContent = `${getTypeLabel(item.media_type)} · ${getCardDateText(item)}`;
-
-  const services = document.createElement('div');
-  services.className = 'badge-list';
-
-  if (item.service_name) {
-    services.appendChild(createBadge(item.service_name));
-  }
-
-  for (const service of item.services || []) {
-    services.appendChild(createBadge(service.service_name));
-  }
-
-  const extraInfo = document.createElement('div');
-  extraInfo.className = 'badge-list';
-
-  if (item.available_since) {
-    const availableDate = formatDate(item.available_since) || item.available_since;
-    extraInfo.appendChild(createBadge(`Dostupné od ${availableDate}`, true));
-  }
-
-  const profileStatusBadge = createProfileStatusBadge(item.profile_status);
-
-  if (profileStatusBadge) {
-    extraInfo.appendChild(profileStatusBadge);
-  }
-
-  card.appendChild(poster);
-  card.appendChild(heading);
-  card.appendChild(meta);
-  card.appendChild(services);
-  card.appendChild(extraInfo);
-
-  card.addEventListener('click', () => {
-    loadTitleDetail(item.title_id);
-  });
-
-  card.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      loadTitleDetail(item.title_id);
-    }
-  });
-
-  return card;
 }
 
 function renderDetail(title) {
@@ -1303,7 +1252,7 @@ async function loadNews() {
     newsStatus.textContent = '';
 
     for (const item of result.data) {
-      newsGrid.appendChild(createNewsCard(item));
+      newsGrid.appendChild(createAppNewsCard(item));
     }
   } catch (error) {
     console.error('Failed to load news:', error);
