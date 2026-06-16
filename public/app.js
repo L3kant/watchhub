@@ -1360,12 +1360,7 @@ async function loadNews() {
   }
 
   try {
-    const response = await fetch(`${activeNewsEndpoint}?${params.toString()}`);
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || 'Nepodařilo se načíst novinky.');
-    }
+    const result = await fetchJson(`${activeNewsEndpoint}?${params.toString()}`);
 
     if (!result.data || result.data.length === 0) {
       newsStatus.textContent = 'Pro aktuální filtr nejsou dostupné žádné novinky.';
@@ -1398,13 +1393,9 @@ async function loadWatchlist() {
   watchlistStatus.textContent = 'Načítám můj seznam...';
 
   try {
-    const response = await fetch(`/api/profiles/${activeProfileId}/titles/statuses?status=planned`);
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || 'Nepodařilo se načíst můj seznam.');
-    }
+    const result = await fetchJson(
+      `/api/profiles/${activeProfileId}/titles/statuses?status=planned`,
+    );
 
     const titles = Array.isArray(result.data) ? result.data : [];
 
@@ -1439,13 +1430,9 @@ async function loadWatchedList() {
   watchedStatus.textContent = 'Načítám zhlédnuté tituly...';
 
   try {
-    const response = await fetch(`/api/profiles/${activeProfileId}/titles/statuses?status=watched`);
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || 'Nepodařilo se načíst zhlédnuté tituly.');
-    }
+    const result = await fetchJson(
+      `/api/profiles/${activeProfileId}/titles/statuses?status=watched`,
+    );
 
     const titles = Array.isArray(result.data) ? result.data : [];
 
