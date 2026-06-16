@@ -8,29 +8,30 @@ Aktuální stav projektu je **POC / výukový milestone**, ne produkční aplika
 
 ## Funkce v aktuálním POC
 
-* evidence streamovacích služeb
-* evidence uživatelských předplatných
-* synchronizace providerů pro ČR přes TMDb
-* synchronizace žánrů přes TMDb
-* synchronizace katalogu filmů a seriálů přes TMDb
-* zobrazení katalogu ve vanilla HTML/CSS/JavaScript UI
-* filtrování podle názvu, služby, typu a žánru
-* detail titulu s metadaty, plakátem, popisem, hodnocením, žánry a dostupnými službami
-* profily s věkovým limitem
-* profilový watchlist
-* označení titulů jako:
+- evidence streamovacích služeb
+- evidence uživatelských předplatných
+- synchronizace providerů pro ČR přes TMDb
+- synchronizace žánrů přes TMDb
+- synchronizace katalogu filmů a seriálů přes TMDb
+- zobrazení katalogu ve vanilla HTML/CSS/JavaScript UI
+- filtrování podle názvu, služby, typu a žánru
+- detail titulu s metadaty, plakátem, popisem, hodnocením, žánry a dostupnými službami
+- profily s věkovým limitem
+- profilový watchlist
+- označení titulů jako:
 
-  * Chci vidět
-  * Zhlédnuto
-  * Skrýt
-* skrytí titulů podle aktivního profilu
-* sekce Novinky
-* sekce Můj seznam
-* sekce Zhlédnuto
-* základní admin diagnostika
-* Movie of the Night odkazy načítané ručně na vyžádání
-* lokální SQLite cache pro konkrétní externí odkazy
-* lokální počitadlo využití Movie of the Night API limitu
+  - Chci vidět
+  - Zhlédnuto
+  - Skrýt
+
+- skrytí titulů podle aktivního profilu
+- sekce Novinky
+- sekce Můj seznam
+- sekce Zhlédnuto
+- základní admin diagnostika
+- Movie of the Night odkazy načítané ručně na vyžádání
+- lokální SQLite cache pro konkrétní externí odkazy
+- lokální počitadlo využití Movie of the Night API limitu
 
 ## Co aplikace není
 
@@ -38,37 +39,37 @@ WatchHub není přehrávač streamovaného obsahu.
 
 Aplikace:
 
-* nestahuje video ze streamovacích služeb
-* neobchází DRM
-* nezískává `.m3u8`, `.mpd` ani jiné přímé streamovací URL
-* neukládá hesla, cookies ani session tokeny
-* nepřehrává obsah mimo oficiální streamovací službu
-* nescrapuje účty po přihlášení
-* nereverse-engineeruje interní API Netflixu, Disney+, Maxu ani SkyShowtime
+- nestahuje video ze streamovacích služeb
+- neobchází DRM
+- nezískává `.m3u8`, `.mpd` ani jiné přímé streamovací URL
+- neukládá hesla, cookies ani session tokeny
+- nepřehrává obsah mimo oficiální streamovací službu
+- nescrapuje účty po přihlášení
+- nereverse-engineeruje interní API Netflixu, Disney+, Maxu ani SkyShowtime
 
 WatchHub slouží pouze jako katalog, přehled dostupnosti, profilový filtr, watchlist, novinkový přehled a launcher.
 
 ## Použité technologie
 
-* JavaScript
-* Node.js
-* Express
-* SQLite přes `node:sqlite`
-* SQL
-* HTML
-* CSS
-* vanilla JavaScript
-* CommonJS
+- JavaScript
+- Node.js
+- Express
+- SQLite přes `node:sqlite`
+- SQL
+- HTML
+- CSS
+- vanilla JavaScript
+- CommonJS
 
 Projekt zatím záměrně nepoužívá:
 
-* React
-* Next.js
-* TypeScript
-* Docker
-* ORM
-* frontend build tools
-* přihlašování uživatelů
+- React
+- Next.js
+- TypeScript
+- Docker
+- ORM
+- frontend build tools
+- přihlašování uživatelů
 
 ## Externí zdroje dat
 
@@ -76,13 +77,13 @@ Projekt zatím záměrně nepoužívá:
 
 TMDb je hlavní zdroj:
 
-* providerů
-* katalogových metadat
-* žánrů
-* plakátů
-* popisů
-* hodnocení
-* dostupnosti podle regionu
+- providerů
+- katalogových metadat
+- žánrů
+- plakátů
+- popisů
+- hodnocení
+- dostupnosti podle regionu
 
 TMDb se volá pouze z backendu. Přístupový token patří do `.env` a nesmí být uložený v Gitu.
 
@@ -94,11 +95,11 @@ Movie of the Night je doplňkový zdroj konkrétních webových odkazů na strea
 
 V aktuálním POC:
 
-* API se volá pouze z backendu
-* odkazy se načítají ručně na vyžádání
-* výsledné odkazy se ukládají do SQLite cache
-* ukládají se pouze běžné bezpečné `https://` webové odkazy
-* nepoužívají se ani neukládají přímé video odkazy
+- API se volá pouze z backendu
+- odkazy se načítají ručně na vyžádání
+- výsledné odkazy se ukládají do SQLite cache
+- ukládají se pouze běžné bezpečné `https://` webové odkazy
+- nepoužívají se ani neukládají přímé video odkazy
 
 ## Lokální instalace
 
@@ -219,30 +220,30 @@ npm run fix
 
 Před publikací POC zkontroluj:
 
-* `npm install` proběhne bez chyby
-* `.env` existuje lokálně a není commitnutý
-* `npm run db:init` vytvoří databázi
-* `npm run db:check` vypíše tabulky
-* `npm run tmdb:sync-providers` doběhne úspěšně
-* `npm run tmdb:sync-genres` doběhne úspěšně
-* `npm run tmdb:sync-catalog -- movie Netflix --pages=1` doběhne úspěšně
-* `npm run catalog:summary` vypíše souhrn katalogu
-* `npm start` spustí server
-* `http://localhost:3000` zobrazí UI
-* katalog zobrazuje tituly
-* filtr podle služby funguje
-* filtr podle typu funguje
-* filtr podle žánru funguje
-* detail titulu se otevře v modalu
-* launcher tlačítka otevírají pouze bezpečné webové odkazy
-* tlačítko pro načtení konkrétních odkazů nevolá Movie of the Night automaticky
-* profilový přepínač funguje
-* Můj seznam funguje
-* Zhlédnuto funguje
-* Skrýt odstraní titul z katalogu pro daný profil
-* Novinky se načítají
-* Admin přehled se načítá
-* `npm run check` projde
+- `npm install` proběhne bez chyby
+- `.env` existuje lokálně a není commitnutý
+- `npm run db:init` vytvoří databázi
+- `npm run db:check` vypíše tabulky
+- `npm run tmdb:sync-providers` doběhne úspěšně
+- `npm run tmdb:sync-genres` doběhne úspěšně
+- `npm run tmdb:sync-catalog -- movie Netflix --pages=1` doběhne úspěšně
+- `npm run catalog:summary` vypíše souhrn katalogu
+- `npm start` spustí server
+- `http://localhost:3000` zobrazí UI
+- katalog zobrazuje tituly
+- filtr podle služby funguje
+- filtr podle typu funguje
+- filtr podle žánru funguje
+- detail titulu se otevře v modalu
+- launcher tlačítka otevírají pouze bezpečné webové odkazy
+- tlačítko pro načtení konkrétních odkazů nevolá Movie of the Night automaticky
+- profilový přepínač funguje
+- Můj seznam funguje
+- Zhlédnuto funguje
+- Skrýt odstraní titul z katalogu pro daný profil
+- Novinky se načítají
+- Admin přehled se načítá
+- `npm run check` projde
 
 ## Bezpečnost před publikací
 
@@ -258,27 +259,27 @@ git ls-files "*.db"
 
 Očekávaný stav:
 
-* `git status` je čistý
-* `.env` není trackovaný
-* `data/` není trackovaná
-* žádná SQLite databáze není trackovaná
-* žádný API token není v commitech
+- `git status` je čistý
+- `.env` není trackovaný
+- `data/` není trackovaná
+- žádná SQLite databáze není trackovaná
+- žádný API token není v commitech
 
 ## Známé limity POC
 
-* aplikace je určená pro lokální soukromé použití
-* neobsahuje autentizaci
-* neobsahuje automatizované testy
-* UI je základní a zatím bez většího UX refaktoru
-* `public/app.js` je zatím větší monolitický soubor
-* `routes/catalog.js` obsahuje část duplicitní logiky
-* profilová správa je základní
-* věkové ratingy nejsou plně doplněné
-* runtime u titulů nemusí být doplněný
-* Movie of the Night odkazy se načítají ručně pro konkrétní titul
-* dávkový Movie of the Night sync zatím není implementovaný
-* Filmtoro integrace zatím není implementovaná
-* iVysílání a Stream zatím nejsou implementované
+- aplikace je určená pro lokální soukromé použití
+- neobsahuje autentizaci
+- neobsahuje automatizované testy
+- UI je základní a zatím bez většího UX refaktoru
+- `public/app.js` je zatím větší monolitický soubor
+- `routes/catalog.js` obsahuje část duplicitní logiky
+- profilová správa je základní
+- věkové ratingy nejsou plně doplněné
+- runtime u titulů nemusí být doplněný
+- Movie of the Night odkazy se načítají ručně pro konkrétní titul
+- dávkový Movie of the Night sync zatím není implementovaný
+- Filmtoro integrace zatím není implementovaná
+- iVysílání a Stream zatím nejsou implementované
 
 ## Roadmapa
 
@@ -294,14 +295,14 @@ Očekávaný stav:
 
 ### Pozdější rozvoj
 
-* automatizované testy
-* sync history / `sync_runs`
-* dávkový Movie of the Night sync
-* rozšíření o další zdroje
-* PWA
-* browser extension
-* případné vyhodnocení React/Vite frontendu
-* případný deployment mimo lokální stroj
+- automatizované testy
+- sync history / `sync_runs`
+- dávkový Movie of the Night sync
+- rozšíření o další zdroje
+- PWA
+- browser extension
+- případné vyhodnocení React/Vite frontendu
+- případný deployment mimo lokální stroj
 
 ## Licence
 
