@@ -16,11 +16,9 @@
   }
 
   const { getProfileStatusLabel, getTypeLabel } = window.WatchHubLabels;
-  const { createBadge, createPoster, createInfoLine, isSafeExternalUrl } =
-    window.WatchHubDomHelpers;
+  const { createPoster, createInfoLine, isSafeExternalUrl } = window.WatchHubDomHelpers;
   const {
     formatRating,
-    formatDate,
     getPrimaryDate,
     formatAdminNumber,
     formatAdminPercent,
@@ -28,20 +26,6 @@
     escapeHtml,
   } = window.WatchHubFormatters;
   const { PROFILE_TITLE_STATUSES } = window.WatchHubConfig;
-
-  function createProfileStatusBadge(status) {
-    if (!status) {
-      return null;
-    }
-
-    const label = getProfileStatusLabel(status);
-
-    if (label === 'Bez stavu') {
-      return null;
-    }
-
-    return createBadge(label, true);
-  }
 
   function hasExternalLinks(services) {
     return (
@@ -52,144 +36,6 @@
         );
       })
     );
-  }
-
-  function createCatalogCard(title, options = {}) {
-    const { onOpenTitle, getCardDateText } = options;
-
-    const card = document.createElement('article');
-    card.className = 'title-card';
-    card.tabIndex = 0;
-
-    const poster = createPoster(title, 'title-poster');
-
-    const heading = document.createElement('h3');
-    heading.textContent = title.display_title;
-
-    const meta = document.createElement('p');
-    const dateText =
-      typeof getCardDateText === 'function'
-        ? getCardDateText(title)
-        : title.release_year || 'neznámé datum';
-
-    meta.textContent = `${getTypeLabel(title.media_type)} · ${dateText}`;
-
-    const services = document.createElement('div');
-    services.className = 'badge-list';
-
-    for (const service of title.services || []) {
-      services.appendChild(createBadge(service.service_name));
-    }
-
-    const genres = document.createElement('div');
-    genres.className = 'badge-list';
-
-    for (const genre of title.genres || []) {
-      genres.appendChild(createBadge(genre.genre_name, true));
-    }
-
-    const rating = document.createElement('span');
-    rating.className = 'badge';
-    rating.textContent = `Hodnocení ${formatRating(title.rating_value)}`;
-
-    const profileStatusBadge = createProfileStatusBadge(title.profile_status);
-
-    card.appendChild(poster);
-    card.appendChild(heading);
-    card.appendChild(meta);
-
-    if (profileStatusBadge) {
-      const profileStatusList = document.createElement('div');
-      profileStatusList.className = 'badge-list';
-      profileStatusList.appendChild(profileStatusBadge);
-      card.appendChild(profileStatusList);
-    }
-
-    card.appendChild(services);
-    card.appendChild(genres);
-    card.appendChild(rating);
-
-    if (typeof onOpenTitle === 'function') {
-      card.addEventListener('click', () => {
-        onOpenTitle(title.title_id);
-      });
-
-      card.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          onOpenTitle(title.title_id);
-        }
-      });
-    }
-
-    return card;
-  }
-
-  function createNewsCard(item, options = {}) {
-    const { onOpenTitle, getCardDateText } = options;
-
-    const card = document.createElement('article');
-    card.className = 'title-card';
-    card.tabIndex = 0;
-
-    const poster = createPoster(item, 'title-poster');
-
-    const heading = document.createElement('h3');
-    heading.textContent = item.display_title;
-
-    const meta = document.createElement('p');
-    const dateText =
-      typeof getCardDateText === 'function'
-        ? getCardDateText(item)
-        : item.release_year || 'neznámé datum';
-
-    meta.textContent = `${getTypeLabel(item.media_type)} · ${dateText}`;
-
-    const services = document.createElement('div');
-    services.className = 'badge-list';
-
-    if (item.service_name) {
-      services.appendChild(createBadge(item.service_name));
-    }
-
-    for (const service of item.services || []) {
-      services.appendChild(createBadge(service.service_name));
-    }
-
-    const extraInfo = document.createElement('div');
-    extraInfo.className = 'badge-list';
-
-    if (item.available_since) {
-      const availableDate = formatDate(item.available_since) || item.available_since;
-      extraInfo.appendChild(createBadge(`Dostupné od ${availableDate}`, true));
-    }
-
-    const profileStatusBadge = createProfileStatusBadge(item.profile_status);
-
-    if (profileStatusBadge) {
-      extraInfo.appendChild(profileStatusBadge);
-    }
-
-    card.appendChild(poster);
-    card.appendChild(heading);
-    card.appendChild(meta);
-    card.appendChild(services);
-    card.appendChild(extraInfo);
-
-    if (typeof onOpenTitle === 'function') {
-      card.addEventListener('click', () => {
-        onOpenTitle(item.title_id);
-      });
-
-      card.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          onOpenTitle(item.title_id);
-        }
-      });
-    }
-
-    return card;
   }
 
   function createServiceLaunchSection(services) {
@@ -452,50 +298,6 @@
     container.appendChild(wrapper);
   }
 
-  function renderTitleGrid(container, titles, options = {}) {
-    const {
-      statusElement,
-      createCard,
-      emptyText = 'Nenalezen žádný titul.',
-      getStatusText,
-    } = options;
-
-    if (!container) {
-      return;
-    }
-
-    const safeTitles = Array.isArray(titles) ? titles : [];
-
-    container.innerHTML = '';
-
-    if (safeTitles.length === 0) {
-      const emptyMessage = document.createElement('p');
-      emptyMessage.textContent = emptyText;
-
-      container.appendChild(emptyMessage);
-
-      if (statusElement) {
-        statusElement.textContent =
-          typeof getStatusText === 'function' ? getStatusText(0) : 'Zobrazeno titulů: 0';
-      }
-
-      return;
-    }
-
-    for (const title of safeTitles) {
-      if (typeof createCard === 'function') {
-        container.appendChild(createCard(title));
-      }
-    }
-
-    if (statusElement) {
-      statusElement.textContent =
-        typeof getStatusText === 'function'
-          ? getStatusText(safeTitles.length)
-          : `Zobrazeno titulů: ${safeTitles.length}`;
-    }
-  }
-
   function renderProfileSelect(selectElement, profiles, activeProfileId) {
     if (!selectElement) {
       return;
@@ -695,15 +497,12 @@
   }
 
   window.WatchHubRenderers = Object.assign(window.WatchHubRenderers || {}, {
-    createCatalogCard,
-    createNewsCard,
     createServiceLaunchSection,
     createExternalLinksRefreshSection,
     createProfileStatusSection,
     renderDetailLoading,
     renderDetailError,
     renderTitleDetail,
-    renderTitleGrid,
     renderProfileSelect,
     renderAdminStatusCard,
     renderAdminStatus,
