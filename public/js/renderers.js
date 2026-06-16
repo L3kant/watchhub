@@ -350,11 +350,35 @@
     return section;
   }
 
+  function renderDetailLoading(container) {
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = `
+    <h2 id="modalTitle">Detail titulu</h2>
+    <p>Načítám detail titulu...</p>
+  `;
+  }
+
+  function renderDetailError(container) {
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = `
+    <h2 id="modalTitle">Detail titulu</h2>
+    <p>Detail titulu se nepodařilo načíst.</p>
+  `;
+  }
+
   window.WatchHubRenderers = {
     createCatalogCard,
     createNewsCard,
     createServiceLaunchSection,
     createExternalLinksRefreshSection,
     createProfileStatusSection,
+    renderDetailLoading,
+    renderDetailError,
   };
 })();

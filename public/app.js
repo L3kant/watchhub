@@ -48,6 +48,8 @@ const {
   createServiceLaunchSection,
   createExternalLinksRefreshSection,
   createProfileStatusSection,
+  renderDetailLoading,
+  renderDetailError,
 } = window.WatchHubRenderers;
 
 const { fetchJson } = window.WatchHubApi;
@@ -502,20 +504,6 @@ async function loadAdminCatalogQuality() {
   }
 }
 
-function showDetailLoading() {
-  detailElement.innerHTML = `
-    <h2 id="modalTitle">Detail titulu</h2>
-    <p>Načítám detail titulu...</p>
-  `;
-}
-
-function showDetailError() {
-  detailElement.innerHTML = `
-    <h2 id="modalTitle">Detail titulu</h2>
-    <p>Detail titulu se nepodařilo načíst.</p>
-  `;
-}
-
 async function refreshExternalLinks(titleId, button) {
   if (!titleId) {
     return;
@@ -623,7 +611,7 @@ async function loadTitleDetail(titleId) {
   }
 
   openTitleModal();
-  showDetailLoading();
+  renderDetailLoading(detailElement);
 
   try {
     const params = new URLSearchParams();
@@ -649,7 +637,7 @@ async function loadTitleDetail(titleId) {
     renderDetail(result.data);
   } catch (error) {
     console.error('Failed to load title detail:', error);
-    showDetailError();
+    renderDetailError(detailElement);
   }
 }
 
