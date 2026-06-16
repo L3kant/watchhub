@@ -45,6 +45,7 @@ const {
   renderDetailError,
   renderTitleDetail,
   renderTitleGrid,
+  renderProfileSelect,
 } = window.WatchHubRenderers;
 
 const { fetchJson } = window.WatchHubApi;
@@ -853,33 +854,7 @@ async function loadProfiles() {
     localStorage.removeItem(PROFILE_STORAGE_KEY);
   }
 
-  renderProfileSelect();
-}
-
-function renderProfileSelect() {
-  if (!profileSelect) {
-    return;
-  }
-
-  if (profiles.length === 0) {
-    profileSelect.innerHTML = '<option value="">Žádný profil</option>';
-    profileSelect.disabled = true;
-    return;
-  }
-
-  profileSelect.disabled = false;
-
-  profileSelect.innerHTML = profiles
-    .map((profile) => {
-      const selected = profile.profile_id === activeProfileId ? 'selected' : '';
-
-      return `
-        <option value="${profile.profile_id}" ${selected}>
-          ${escapeHtml(profile.profile_name)}
-        </option>
-      `;
-    })
-    .join('');
+  renderProfileSelect(profileSelect, profiles, activeProfileId);
 }
 
 function getActiveProfileParam() {
