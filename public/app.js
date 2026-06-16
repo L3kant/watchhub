@@ -41,7 +41,7 @@ const { getTypeLabel, getProfileStatusLabel } = window.WatchHubLabels;
 
 const { createBadge, createPoster, createInfoLine, isSafeExternalUrl } = window.WatchHubDomHelpers;
 
-const { createProfileStatusBadge } = window.WatchHubRenderers;
+const { createProfileStatusBadge, createCatalogCard } = window.WatchHubRenderers;
 
 const { fetchJson } = window.WatchHubApi;
 
@@ -341,66 +341,11 @@ function closeTitleModal() {
   document.body.classList.remove('modal-open');
 }
 
-function createCatalogCard(title) {
-  const card = document.createElement('article');
-  card.className = 'title-card';
-  card.tabIndex = 0;
-
-  const poster = createPoster(title, 'title-poster');
-
-  const heading = document.createElement('h3');
-  heading.textContent = title.display_title;
-
-  const meta = document.createElement('p');
-  meta.textContent = `${getTypeLabel(title.media_type)} · ${getCardDateText(title)}`;
-
-  const services = document.createElement('div');
-  services.className = 'badge-list';
-
-  for (const service of title.services || []) {
-    services.appendChild(createBadge(service.service_name));
-  }
-
-  const genres = document.createElement('div');
-  genres.className = 'badge-list';
-
-  for (const genre of title.genres || []) {
-    genres.appendChild(createBadge(genre.genre_name, true));
-  }
-
-  const rating = document.createElement('span');
-  rating.className = 'badge';
-  rating.textContent = `Hodnocení ${formatRating(title.rating_value)}`;
-
-  const profileStatusBadge = createProfileStatusBadge(title.profile_status);
-
-  card.appendChild(poster);
-  card.appendChild(heading);
-  card.appendChild(meta);
-
-  if (profileStatusBadge) {
-    const profileStatusList = document.createElement('div');
-    profileStatusList.className = 'badge-list';
-    profileStatusList.appendChild(profileStatusBadge);
-    card.appendChild(profileStatusList);
-  }
-
-  card.appendChild(services);
-  card.appendChild(genres);
-  card.appendChild(rating);
-
-  card.addEventListener('click', () => {
-    loadTitleDetail(title.title_id);
+function createAppCatalogCard(title) {
+  return createCatalogCard(title, {
+    getCardDateText,
+    onOpenTitle: loadTitleDetail,
   });
-
-  card.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      loadTitleDetail(title.title_id);
-    }
-  });
-
-  return card;
 }
 
 function renderCatalog(titles) {
@@ -413,7 +358,7 @@ function renderCatalog(titles) {
   }
 
   for (const title of titles) {
-    catalogElement.appendChild(createCatalogCard(title));
+    catalogElement.appendChild(createAppCatalogCard(title));
   }
 
   catalogStatus.textContent = `Zobrazeno titulů: ${titles.length}`;
@@ -1395,7 +1340,7 @@ async function loadWatchlist() {
     watchlistStatus.textContent = '';
 
     for (const title of titles) {
-      watchlistGrid.appendChild(createCatalogCard(title));
+      watchlistGrid.appendChild(createAppCatalogCard(title));
     }
   } catch (error) {
     console.error('Failed to load watchlist:', error);
@@ -1432,7 +1377,7 @@ async function loadWatchedList() {
     watchedStatus.textContent = '';
 
     for (const title of titles) {
-      watchedGrid.appendChild(createCatalogCard(title));
+      watchedGrid.appendChild(createAppCatalogCard(title));
     }
   } catch (error) {
     console.error('Failed to load watched list:', error);
