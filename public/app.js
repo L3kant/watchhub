@@ -1018,16 +1018,12 @@ async function loadWatchlist() {
 
     const titles = Array.isArray(result.data) ? result.data : [];
 
-    if (titles.length === 0) {
-      watchlistStatus.textContent = 'V mém seznamu zatím není žádný titul.';
-      return;
-    }
-
-    watchlistStatus.textContent = '';
-
-    for (const title of titles) {
-      watchlistGrid.appendChild(createAppCatalogCard(title));
-    }
+    renderTitleGrid(watchlistGrid, titles, {
+      statusElement: watchlistStatus,
+      createCard: createAppCatalogCard,
+      emptyText: 'V mém seznamu zatím není žádný titul.',
+      getStatusText: (count) => (count === 0 ? 'V mém seznamu zatím není žádný titul.' : ''),
+    });
   } catch (error) {
     console.error('Failed to load watchlist:', error);
     watchlistStatus.textContent = error.message || 'Nepodařilo se načíst můj seznam.';
@@ -1055,16 +1051,12 @@ async function loadWatchedList() {
 
     const titles = Array.isArray(result.data) ? result.data : [];
 
-    if (titles.length === 0) {
-      watchedStatus.textContent = 'Zatím není označený žádný zhlédnutý titul.';
-      return;
-    }
-
-    watchedStatus.textContent = '';
-
-    for (const title of titles) {
-      watchedGrid.appendChild(createAppCatalogCard(title));
-    }
+    renderTitleGrid(watchedGrid, titles, {
+      statusElement: watchedStatus,
+      createCard: createAppCatalogCard,
+      emptyText: 'Zatím není označený žádný zhlédnutý titul.',
+      getStatusText: (count) => (count === 0 ? 'Zatím není označený žádný zhlédnutý titul.' : ''),
+    });
   } catch (error) {
     console.error('Failed to load watched list:', error);
     watchedStatus.textContent = error.message || 'Nepodařilo se načíst zhlédnuté tituly.';
