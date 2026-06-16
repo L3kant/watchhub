@@ -694,7 +694,7 @@
     messageElement.textContent = `Načteno profilů: ${profilesData.length}`;
   }
 
-  window.WatchHubRenderers = {
+  window.WatchHubRenderers = Object.assign(window.WatchHubRenderers || {}, {
     createCatalogCard,
     createNewsCard,
     createServiceLaunchSection,
@@ -709,5 +709,5 @@
     renderAdminStatus,
     renderAdminServices,
     renderAdminProfiles,
-  };
+  });
 })();
