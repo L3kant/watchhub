@@ -35,9 +35,9 @@ const {
   escapeHtml,
 } = window.WatchHubFormatters;
 
-const { PROFILE_STORAGE_KEY, PROFILE_TITLE_STATUSES } = window.WatchHubConfig;
+const { PROFILE_STORAGE_KEY } = window.WatchHubConfig;
 
-const { getTypeLabel, getProfileStatusLabel } = window.WatchHubLabels;
+const { getTypeLabel } = window.WatchHubLabels;
 
 const { createPoster, createInfoLine } = window.WatchHubDomHelpers;
 
@@ -46,6 +46,7 @@ const {
   createNewsCard,
   createServiceLaunchSection,
   createExternalLinksRefreshSection,
+  createProfileStatusSection,
 } = window.WatchHubRenderers;
 
 const { fetchJson } = window.WatchHubApi;
@@ -168,67 +169,6 @@ function getCardDateText(title) {
   }
 
   return 'neznámé datum';
-}
-
-function createProfileStatusSection(title) {
-  const section = document.createElement('section');
-  section.className = 'detail-section detail-status-section';
-
-  const heading = document.createElement('h3');
-  heading.textContent = 'Moje sledování';
-
-  const statusText = document.createElement('p');
-  statusText.className = 'muted-text';
-  statusText.textContent = activeProfileId
-    ? `Aktuální stav: ${getProfileStatusLabel(title.profile_status)}`
-    : 'Vyber profil pro použití watchlistu.';
-
-  const actions = document.createElement('div');
-  actions.className = 'detail-status-actions';
-
-  if (!activeProfileId) {
-    section.appendChild(heading);
-    section.appendChild(statusText);
-    section.appendChild(actions);
-
-    return section;
-  }
-
-  for (const statusConfig of PROFILE_TITLE_STATUSES) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'status-action-button';
-    button.textContent = statusConfig.label;
-
-    if (title.profile_status === statusConfig.value) {
-      button.classList.add('is-active');
-    }
-
-    button.addEventListener('click', () => {
-      updateTitleStatus(title.title_id, statusConfig.value);
-    });
-
-    actions.appendChild(button);
-  }
-
-  if (title.profile_status) {
-    const clearButton = document.createElement('button');
-    clearButton.type = 'button';
-    clearButton.className = 'status-action-button danger-button';
-    clearButton.textContent = 'Zrušit stav';
-
-    clearButton.addEventListener('click', () => {
-      clearTitleStatus(title.title_id);
-    });
-
-    actions.appendChild(clearButton);
-  }
-
-  section.appendChild(heading);
-  section.appendChild(statusText);
-  section.appendChild(actions);
-
-  return section;
 }
 
 function openTitleModal() {
@@ -387,7 +327,13 @@ function renderDetail(title) {
   content.appendChild(createInfoLine(primaryDate.label, primaryDateText));
   content.appendChild(createInfoLine('Hodnocení', formatRating(title.rating_value)));
   content.appendChild(createInfoLine('Původní jazyk', languageText));
-  content.appendChild(createProfileStatusSection(title));
+  content.appendChild(
+    createProfileStatusSection(title, {
+      activeProfileId,
+      onUpdateTitleStatus: updateTitleStatus,
+      onClearTitleStatus: clearTitleStatus,
+    }),
+  );
   content.appendChild(createServiceLaunchSection(services));
   content.appendChild(
     createExternalLinksRefreshSection(title, {

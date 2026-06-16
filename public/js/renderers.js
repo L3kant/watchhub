@@ -11,9 +11,14 @@
     throw new Error('WatchHubDomHelpers was not loaded. Check script order in index.html.');
   }
 
+  if (!window.WatchHubConfig) {
+    throw new Error('WatchHubConfig was not loaded. Check script order in index.html.');
+  }
+
   const { getProfileStatusLabel, getTypeLabel } = window.WatchHubLabels;
   const { createBadge, createPoster, isSafeExternalUrl } = window.WatchHubDomHelpers;
   const { formatRating, formatDate } = window.WatchHubFormatters;
+  const { PROFILE_TITLE_STATUSES } = window.WatchHubConfig;
 
   function createProfileStatusBadge(status) {
     if (!status) {
@@ -278,10 +283,78 @@
     return section;
   }
 
+  function createProfileStatusSection(title, options = {}) {
+    const { activeProfileId, onUpdateTitleStatus, onClearTitleStatus } = options;
+
+    const section = document.createElement('section');
+    section.className = 'detail-section detail-status-section';
+
+    const heading = document.createElement('h3');
+    heading.textContent = 'Moje sledování';
+
+    const statusText = document.createElement('p');
+    statusText.className = 'muted-text';
+    statusText.textContent = activeProfileId
+      ? `Aktuální stav: ${getProfileStatusLabel(title.profile_status)}`
+      : 'Vyber profil pro použití watchlistu.';
+
+    const actions = document.createElement('div');
+    actions.className = 'detail-status-actions';
+
+    if (!activeProfileId) {
+      section.appendChild(heading);
+      section.appendChild(statusText);
+      section.appendChild(actions);
+
+      return section;
+    }
+
+    for (const statusConfig of PROFILE_TITLE_STATUSES) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'status-action-button';
+      button.textContent = statusConfig.label;
+
+      if (title.profile_status === statusConfig.value) {
+        button.classList.add('is-active');
+      }
+
+      if (typeof onUpdateTitleStatus === 'function') {
+        button.addEventListener('click', () => {
+          onUpdateTitleStatus(title.title_id, statusConfig.value);
+        });
+      }
+
+      actions.appendChild(button);
+    }
+
+    if (title.profile_status) {
+      const clearButton = document.createElement('button');
+      clearButton.type = 'button';
+      clearButton.className = 'status-action-button danger-button';
+      clearButton.textContent = 'Zrušit stav';
+
+      if (typeof onClearTitleStatus === 'function') {
+        clearButton.addEventListener('click', () => {
+          onClearTitleStatus(title.title_id);
+        });
+      }
+
+      actions.appendChild(clearButton);
+    }
+
+    section.appendChild(heading);
+    section.appendChild(statusText);
+    section.appendChild(actions);
+
+    return section;
+  }
+
   window.WatchHubRenderers = {
     createCatalogCard,
     createNewsCard,
     createServiceLaunchSection,
     createExternalLinksRefreshSection,
+    createProfileStatusSection,
   };
 })();
