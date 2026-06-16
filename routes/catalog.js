@@ -361,6 +361,45 @@ function getServicesByTitleIds(titleIds, options = {}) {
   return servicesByTitleId;
 }
 
+function getGenresByTitleIds(titleIds) {
+  if (!Array.isArray(titleIds) || titleIds.length === 0) {
+    return new Map();
+  }
+
+  const placeholders = createTitleIdPlaceholders(titleIds);
+
+  const genreRows = db
+    .prepare(
+      `
+      SELECT
+        tg.title_id,
+        mg.genre_id,
+        mg.genre_name
+      FROM title_genres tg
+      JOIN media_genres mg
+        ON mg.genre_id = tg.genre_id
+      WHERE tg.title_id IN (${placeholders})
+      ORDER BY mg.genre_name ASC
+    `,
+    )
+    .all(...titleIds);
+
+  const genresByTitleId = new Map();
+
+  for (const row of genreRows) {
+    if (!genresByTitleId.has(row.title_id)) {
+      genresByTitleId.set(row.title_id, []);
+    }
+
+    genresByTitleId.get(row.title_id).push({
+      genre_id: row.genre_id,
+      genre_name: row.genre_name,
+    });
+  }
+
+  return genresByTitleId;
+}
+
 function buildCatalogWhereClause(filters, profile) {
   const conditions = [];
   const params = [];
@@ -1210,41 +1249,12 @@ router.get('/', (req, res) => {
     }
 
     const titleIds = titles.map((title) => title.title_id);
-    const placeholders = createTitleIdPlaceholders(titleIds);
 
     const blockedServices = profile?.blocked_services || [];
     const servicesByTitleId = getServicesByTitleIds(titleIds, {
       blockedServices,
     });
-
-    const genreRows = db
-      .prepare(
-        `
-        SELECT
-          tg.title_id,
-          mg.genre_id,
-          mg.genre_name
-        FROM title_genres tg
-        JOIN media_genres mg
-          ON mg.genre_id = tg.genre_id
-        WHERE tg.title_id IN (${placeholders})
-        ORDER BY mg.genre_name ASC
-      `,
-      )
-      .all(...titleIds);
-
-    const genresByTitleId = new Map();
-
-    for (const row of genreRows) {
-      if (!genresByTitleId.has(row.title_id)) {
-        genresByTitleId.set(row.title_id, []);
-      }
-
-      genresByTitleId.get(row.title_id).push({
-        genre_id: row.genre_id,
-        genre_name: row.genre_name,
-      });
-    }
+    const genresByTitleId = getGenresByTitleIds(titleIds);
 
     const data = titles.map((title) => ({
       ...title,
