@@ -980,17 +980,15 @@ async function loadNews() {
 
   try {
     const result = await fetchJson(`${activeNewsEndpoint}?${params.toString()}`);
+    const items = Array.isArray(result.data) ? result.data : [];
 
-    if (!result.data || result.data.length === 0) {
-      newsStatus.textContent = 'Pro aktuální filtr nejsou dostupné žádné novinky.';
-      return;
-    }
-
-    newsStatus.textContent = '';
-
-    for (const item of result.data) {
-      newsGrid.appendChild(createAppNewsCard(item));
-    }
+    renderTitleGrid(newsGrid, items, {
+      statusElement: newsStatus,
+      createCard: createAppNewsCard,
+      emptyText: 'Pro aktuální filtr nejsou dostupné žádné novinky.',
+      getStatusText: (count) =>
+        count === 0 ? 'Pro aktuální filtr nejsou dostupné žádné novinky.' : '',
+    });
   } catch (error) {
     console.error('Failed to load news:', error);
     newsStatus.textContent = error.message || 'Nepodařilo se načíst novinky.';
