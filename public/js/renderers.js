@@ -12,7 +12,7 @@
   }
 
   const { getProfileStatusLabel, getTypeLabel } = window.WatchHubLabels;
-  const { createBadge, createPoster } = window.WatchHubDomHelpers;
+  const { createBadge, createPoster, isSafeExternalUrl } = window.WatchHubDomHelpers;
   const { formatRating, formatDate } = window.WatchHubFormatters;
 
   function createProfileStatusBadge(status) {
@@ -167,8 +167,67 @@
     return card;
   }
 
+  function createServiceLaunchSection(services) {
+    const section = document.createElement('section');
+    section.className = 'detail-section';
+
+    const heading = document.createElement('h3');
+    heading.textContent = 'Dostupné na';
+
+    const list = document.createElement('div');
+    list.className = 'detail-services';
+
+    if (!Array.isArray(services) || services.length === 0) {
+      const emptyText = document.createElement('p');
+      emptyText.className = 'muted-text';
+      emptyText.textContent = 'Žádná služba není dostupná.';
+
+      list.appendChild(emptyText);
+      section.appendChild(heading);
+      section.appendChild(list);
+
+      return section;
+    }
+
+    for (const service of services) {
+      const row = document.createElement('div');
+      row.className = 'detail-service-row';
+
+      const serviceName = document.createElement('span');
+      serviceName.className = 'service-name';
+      serviceName.textContent = service.service_name || 'Služba';
+
+      row.appendChild(serviceName);
+
+      if (isSafeExternalUrl(service.launch_url)) {
+        const link = document.createElement('a');
+        link.className = 'service-launch-link';
+        link.href = service.launch_url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = service.launch_label || `Otevřít ${serviceName.textContent}`;
+
+        row.appendChild(link);
+      } else {
+        const missingLink = document.createElement('span');
+        missingLink.className = 'muted-text';
+        missingLink.textContent = 'Odkaz není dostupný';
+
+        row.appendChild(missingLink);
+      }
+
+      list.appendChild(row);
+    }
+
+    section.appendChild(heading);
+    section.appendChild(list);
+
+    return section;
+  }
+
   window.WatchHubRenderers = {
     createCatalogCard,
     createNewsCard,
+    createServiceLaunchSection,
   };
 })();
