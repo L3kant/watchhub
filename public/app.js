@@ -35,9 +35,11 @@ const {
   escapeHtml,
 } = window.WatchHubFormatters;
 
-const { TMDB_IMAGE_BASE_URL, PROFILE_STORAGE_KEY, PROFILE_TITLE_STATUSES } = window.WatchHubConfig;
+const { PROFILE_STORAGE_KEY, PROFILE_TITLE_STATUSES } = window.WatchHubConfig;
 
 const { getTypeLabel, getProfileStatusLabel } = window.WatchHubLabels;
+
+const { createBadge, createPoster, createInfoLine, isSafeExternalUrl } = window.WatchHubDomHelpers;
 
 const profileSelect = document.querySelector('#profileSelect');
 
@@ -159,13 +161,6 @@ function getCardDateText(title) {
   return 'neznámé datum';
 }
 
-function createBadge(text, secondary = false) {
-  const badge = document.createElement('span');
-  badge.className = secondary ? 'badge secondary' : 'badge';
-  badge.textContent = text;
-  return badge;
-}
-
 function createProfileStatusBadge(status) {
   if (!status) {
     return null;
@@ -178,39 +173,6 @@ function createProfileStatusBadge(status) {
   }
 
   return createBadge(label, true);
-}
-
-function createPoster(title, className) {
-  if (!title.poster_path) {
-    const placeholder = document.createElement('div');
-    placeholder.className = `${className} title-poster-placeholder`;
-    placeholder.textContent = 'Bez plakátu';
-    return placeholder;
-  }
-
-  const image = document.createElement('img');
-  image.className = className;
-  image.src = `${TMDB_IMAGE_BASE_URL}${title.poster_path}`;
-  image.alt = `Plakát: ${title.display_title}`;
-  image.loading = 'lazy';
-
-  return image;
-}
-
-function createInfoLine(label, value) {
-  const line = document.createElement('p');
-
-  const strong = document.createElement('strong');
-  strong.textContent = `${label}: `;
-
-  line.appendChild(strong);
-  line.append(String(value));
-
-  return line;
-}
-
-function isSafeExternalUrl(url) {
-  return typeof url === 'string' && url.startsWith('https://');
 }
 
 function createServiceLaunchSection(services) {
