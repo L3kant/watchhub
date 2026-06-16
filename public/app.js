@@ -25,15 +25,23 @@ const createProfileAge = document.getElementById('createProfileAge');
 const createProfileColor = document.getElementById('createProfileColor');
 const createProfileMessage = document.getElementById('createProfileMessage');
 
-const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w342';
+const {
+  formatRating,
+  formatDate,
+  formatAdminNumber,
+  formatAdminPercent,
+  formatAdminDate,
+  formatAdminBoolean,
+  escapeHtml,
+} = window.WatchHubFormatters;
 
-const PROFILE_STORAGE_KEY = 'watchhub.activeProfileId';
+const { PROFILE_STORAGE_KEY, PROFILE_TITLE_STATUSES } = window.WatchHubConfig;
 
-const PROFILE_TITLE_STATUSES = [
-  { value: 'planned', label: 'Chci vidět' },
-  { value: 'watched', label: 'Zhlédnuto' },
-  { value: 'hidden', label: 'Skrýt' },
-];
+const { getTypeLabel, getProfileStatusLabel } = window.WatchHubLabels;
+
+const { createBadge, createPoster, createInfoLine, isSafeExternalUrl } = window.WatchHubDomHelpers;
+
+const { fetchJson } = window.WatchHubApi;
 
 const profileSelect = document.querySelector('#profileSelect');
 
@@ -42,59 +50,6 @@ let activeProfileId = null;
 let activeNewsEndpoint = '/api/catalog/new';
 
 let currentTitles = [];
-
-function getTypeLabel(type) {
-  if (type === 'movie') {
-    return 'Film';
-  }
-
-  if (type === 'tv') {
-    return 'Seriál';
-  }
-
-  return 'Neznámý typ';
-}
-
-function getProfileStatusLabel(status) {
-  if (status === 'watching') {
-    return 'Sleduji';
-  }
-
-  const statusConfig = PROFILE_TITLE_STATUSES.find((item) => {
-    return item.value === status;
-  });
-
-  return statusConfig ? statusConfig.label : 'Bez stavu';
-}
-
-function formatRating(ratingValue) {
-  if (ratingValue === null || ratingValue === undefined) {
-    return 'bez hodnocení';
-  }
-
-  return Number(ratingValue).toFixed(1);
-}
-
-function formatDate(value) {
-  if (typeof value !== 'string' || value.trim() === '') {
-    return null;
-  }
-
-  const dateOnly = value.trim().slice(0, 10);
-  const parts = dateOnly.split('-');
-
-  if (parts.length !== 3) {
-    return null;
-  }
-
-  const [year, month, day] = parts;
-
-  if (!year || !month || !day) {
-    return null;
-  }
-
-  return `${day}. ${month}. ${year}`;
-}
 
 async function createProfileFromForm(event) {
   event.preventDefault();
@@ -173,27 +128,6 @@ async function createProfileFromForm(event) {
   }
 }
 
-function formatAdminNumber(value) {
-  const number = Number(value || 0);
-  return number.toLocaleString('cs-CZ');
-}
-
-function formatAdminPercent(value) {
-  if (value === null || value === undefined) {
-    return '—';
-  }
-
-  return `${Math.round(Number(value) * 100)} %`;
-}
-
-function formatAdminDate(value) {
-  if (!value) {
-    return '—';
-  }
-
-  return new Date(value).toLocaleString('cs-CZ');
-}
-
 function getPrimaryDate(title) {
   if (title.media_type === 'movie') {
     return {
@@ -229,13 +163,6 @@ function getCardDateText(title) {
   return 'neznámé datum';
 }
 
-function createBadge(text, secondary = false) {
-  const badge = document.createElement('span');
-  badge.className = secondary ? 'badge secondary' : 'badge';
-  badge.textContent = text;
-  return badge;
-}
-
 function createProfileStatusBadge(status) {
   if (!status) {
     return null;
@@ -248,39 +175,6 @@ function createProfileStatusBadge(status) {
   }
 
   return createBadge(label, true);
-}
-
-function createPoster(title, className) {
-  if (!title.poster_path) {
-    const placeholder = document.createElement('div');
-    placeholder.className = `${className} title-poster-placeholder`;
-    placeholder.textContent = 'Bez plakátu';
-    return placeholder;
-  }
-
-  const image = document.createElement('img');
-  image.className = className;
-  image.src = `${TMDB_IMAGE_BASE_URL}${title.poster_path}`;
-  image.alt = `Plakát: ${title.display_title}`;
-  image.loading = 'lazy';
-
-  return image;
-}
-
-function createInfoLine(label, value) {
-  const line = document.createElement('p');
-
-  const strong = document.createElement('strong');
-  strong.textContent = `${label}: `;
-
-  line.appendChild(strong);
-  line.append(String(value));
-
-  return line;
-}
-
-function isSafeExternalUrl(url) {
-  return typeof url === 'string' && url.startsWith('https://');
 }
 
 function createServiceLaunchSection(services) {
@@ -924,10 +818,6 @@ function showDetailError() {
   `;
 }
 
-function formatAdminBoolean(value) {
-  return value ? 'Ano' : 'Ne';
-}
-
 async function refreshExternalLinks(titleId, button) {
   if (!titleId) {
     return;
@@ -1324,23 +1214,9 @@ async function loadAdminProfiles() {
   }
 }
 
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
-}
-
 async function loadProfiles() {
-  const response = await fetch('/api/profiles');
+  const result = await fetchJson('/api/profiles');
 
-  if (!response.ok) {
-    throw new Error('Nepodařilo se načíst profily.');
-  }
-
-  const result = await response.json();
   profiles = Array.isArray(result.data) ? result.data : [];
 
   const savedProfileId = Number(localStorage.getItem(PROFILE_STORAGE_KEY));
@@ -1432,13 +1308,7 @@ function buildCatalogUrl() {
 
 async function loadGenres() {
   try {
-    const response = await fetch('/api/catalog/genres');
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const result = await response.json();
+    const result = await fetchJson('/api/catalog/genres');
 
     for (const genre of result.data) {
       const option = document.createElement('option');
@@ -1456,13 +1326,7 @@ async function loadCatalog() {
   try {
     catalogStatus.textContent = 'Načítám katalog...';
 
-    const response = await fetch(buildCatalogUrl());
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const result = await response.json();
+    const result = await fetchJson(buildCatalogUrl());
 
     currentTitles = result.data;
     renderCatalog(currentTitles);
@@ -1496,12 +1360,7 @@ async function loadNews() {
   }
 
   try {
-    const response = await fetch(`${activeNewsEndpoint}?${params.toString()}`);
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || 'Nepodařilo se načíst novinky.');
-    }
+    const result = await fetchJson(`${activeNewsEndpoint}?${params.toString()}`);
 
     if (!result.data || result.data.length === 0) {
       newsStatus.textContent = 'Pro aktuální filtr nejsou dostupné žádné novinky.';
@@ -1534,13 +1393,9 @@ async function loadWatchlist() {
   watchlistStatus.textContent = 'Načítám můj seznam...';
 
   try {
-    const response = await fetch(`/api/profiles/${activeProfileId}/titles/statuses?status=planned`);
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || 'Nepodařilo se načíst můj seznam.');
-    }
+    const result = await fetchJson(
+      `/api/profiles/${activeProfileId}/titles/statuses?status=planned`,
+    );
 
     const titles = Array.isArray(result.data) ? result.data : [];
 
@@ -1575,13 +1430,9 @@ async function loadWatchedList() {
   watchedStatus.textContent = 'Načítám zhlédnuté tituly...';
 
   try {
-    const response = await fetch(`/api/profiles/${activeProfileId}/titles/statuses?status=watched`);
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || 'Nepodařilo se načíst zhlédnuté tituly.');
-    }
+    const result = await fetchJson(
+      `/api/profiles/${activeProfileId}/titles/statuses?status=watched`,
+    );
 
     const titles = Array.isArray(result.data) ? result.data : [];
 
