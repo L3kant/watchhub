@@ -41,6 +41,8 @@ const { getTypeLabel, getProfileStatusLabel } = window.WatchHubLabels;
 
 const { createBadge, createPoster, createInfoLine, isSafeExternalUrl } = window.WatchHubDomHelpers;
 
+const { createProfileStatusBadge } = window.WatchHubRenderers;
+
 const { fetchJson } = window.WatchHubApi;
 
 const profileSelect = document.querySelector('#profileSelect');
@@ -161,20 +163,6 @@ function getCardDateText(title) {
   }
 
   return 'neznámé datum';
-}
-
-function createProfileStatusBadge(status) {
-  if (!status) {
-    return null;
-  }
-
-  const label = getProfileStatusLabel(status);
-
-  if (label === 'Bez stavu') {
-    return null;
-  }
-
-  return createBadge(label, true);
 }
 
 function createServiceLaunchSection(services) {
