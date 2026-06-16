@@ -523,6 +523,16 @@
     }
   }
 
+  function renderAdminStatusCard(label, value, note = '') {
+    return `
+    <article class="admin-card">
+      <div class="admin-card-label">${label}</div>
+      <div class="admin-card-value">${value}</div>
+      ${note ? `<div class="admin-card-note">${note}</div>` : ''}
+    </article>
+  `;
+  }
+
   window.WatchHubRenderers = {
     createCatalogCard,
     createNewsCard,
@@ -534,5 +544,6 @@
     renderTitleDetail,
     renderTitleGrid,
     renderProfileSelect,
+    renderAdminStatusCard,
   };
 })();
