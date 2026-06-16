@@ -26,8 +26,6 @@ const createProfileColor = document.getElementById('createProfileColor');
 const createProfileMessage = document.getElementById('createProfileMessage');
 
 const {
-  formatRating,
-  getPrimaryDate,
   getCardDateText,
   formatAdminNumber,
   formatAdminPercent,
@@ -40,16 +38,12 @@ const { PROFILE_STORAGE_KEY } = window.WatchHubConfig;
 
 const { getTypeLabel } = window.WatchHubLabels;
 
-const { createPoster, createInfoLine } = window.WatchHubDomHelpers;
-
 const {
   createCatalogCard,
   createNewsCard,
-  createServiceLaunchSection,
-  createExternalLinksRefreshSection,
-  createProfileStatusSection,
   renderDetailLoading,
   renderDetailError,
+  renderTitleDetail,
 } = window.WatchHubRenderers;
 
 const { fetchJson } = window.WatchHubApi;
@@ -255,66 +249,6 @@ function renderAdminStatus({ status, quota }) {
 
   adminStatusGrid.innerHTML = cards.join('');
   adminStatusMessage.textContent = `Aktualizováno: ${formatAdminDate(status.generated_at)}`;
-}
-
-function renderDetail(title) {
-  const services = Array.isArray(title.services) ? title.services : [];
-  const genres = Array.isArray(title.genres) ? title.genres : [];
-
-  const genreNames =
-    genres.length > 0 ? genres.map((genre) => genre.genre_name).join(', ') : 'Bez žánru';
-
-  const originalTitleText = title.original_title || 'Není dostupný';
-  const releaseYearText = title.release_year || 'neznámý rok';
-  const primaryDate = getPrimaryDate(title);
-  const primaryDateText = primaryDate.value || 'není dostupné';
-  const languageText = title.original_language || 'neznámý jazyk';
-
-  const poster = createPoster(title, 'detail-poster');
-
-  detailElement.innerHTML = '';
-
-  const wrapper = document.createElement('article');
-  wrapper.className = 'detail-card';
-
-  const content = document.createElement('div');
-  content.className = 'detail-content';
-
-  const heading = document.createElement('h2');
-  heading.id = 'modalTitle';
-  heading.textContent = title.display_title;
-
-  const description = document.createElement('p');
-  description.className = 'detail-description';
-  description.textContent = title.overview_text || 'Popis zatím v lokální databázi není.';
-
-  content.appendChild(heading);
-  content.appendChild(createInfoLine('Originální název', originalTitleText));
-  content.appendChild(createInfoLine('Typ', getTypeLabel(title.media_type)));
-  content.appendChild(createInfoLine('Rok', releaseYearText));
-  content.appendChild(createInfoLine(primaryDate.label, primaryDateText));
-  content.appendChild(createInfoLine('Hodnocení', formatRating(title.rating_value)));
-  content.appendChild(createInfoLine('Původní jazyk', languageText));
-  content.appendChild(
-    createProfileStatusSection(title, {
-      activeProfileId,
-      onUpdateTitleStatus: updateTitleStatus,
-      onClearTitleStatus: clearTitleStatus,
-    }),
-  );
-  content.appendChild(createServiceLaunchSection(services));
-  content.appendChild(
-    createExternalLinksRefreshSection(title, {
-      onRefreshExternalLinks: refreshExternalLinks,
-    }),
-  );
-  content.appendChild(createInfoLine('Žánry', genreNames));
-  content.appendChild(description);
-
-  wrapper.appendChild(poster);
-  wrapper.appendChild(content);
-
-  detailElement.appendChild(wrapper);
 }
 
 function renderAdminProfiles(profilesData) {
@@ -634,7 +568,12 @@ async function loadTitleDetail(titleId) {
 
     const result = await response.json();
 
-    renderDetail(result.data);
+    renderTitleDetail(detailElement, result.data, {
+      activeProfileId,
+      onUpdateTitleStatus: updateTitleStatus,
+      onClearTitleStatus: clearTitleStatus,
+      onRefreshExternalLinks: refreshExternalLinks,
+    });
   } catch (error) {
     console.error('Failed to load title detail:', error);
     renderDetailError(detailElement);

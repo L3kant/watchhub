@@ -16,8 +16,9 @@
   }
 
   const { getProfileStatusLabel, getTypeLabel } = window.WatchHubLabels;
-  const { createBadge, createPoster, isSafeExternalUrl } = window.WatchHubDomHelpers;
-  const { formatRating, formatDate } = window.WatchHubFormatters;
+  const { createBadge, createPoster, createInfoLine, isSafeExternalUrl } =
+    window.WatchHubDomHelpers;
+  const { formatRating, formatDate, getPrimaryDate } = window.WatchHubFormatters;
   const { PROFILE_TITLE_STATUSES } = window.WatchHubConfig;
 
   function createProfileStatusBadge(status) {
@@ -372,6 +373,77 @@
   `;
   }
 
+  function renderTitleDetail(container, title, options = {}) {
+    if (!container) {
+      return;
+    }
+
+    const { activeProfileId, onUpdateTitleStatus, onClearTitleStatus, onRefreshExternalLinks } =
+      options;
+
+    const services = Array.isArray(title.services) ? title.services : [];
+    const genres = Array.isArray(title.genres) ? title.genres : [];
+
+    const genreNames =
+      genres.length > 0 ? genres.map((genre) => genre.genre_name).join(', ') : 'Bez žánru';
+
+    const originalTitleText = title.original_title || 'Není dostupný';
+    const releaseYearText = title.release_year || 'neznámý rok';
+    const primaryDate = getPrimaryDate(title);
+    const primaryDateText = primaryDate.value || 'není dostupné';
+    const languageText = title.original_language || 'neznámý jazyk';
+
+    const poster = createPoster(title, 'detail-poster');
+
+    container.innerHTML = '';
+
+    const wrapper = document.createElement('article');
+    wrapper.className = 'detail-card';
+
+    const content = document.createElement('div');
+    content.className = 'detail-content';
+
+    const heading = document.createElement('h2');
+    heading.id = 'modalTitle';
+    heading.textContent = title.display_title;
+
+    const description = document.createElement('p');
+    description.className = 'detail-description';
+    description.textContent = title.overview_text || 'Popis zatím v lokální databázi není.';
+
+    content.appendChild(heading);
+    content.appendChild(createInfoLine('Originální název', originalTitleText));
+    content.appendChild(createInfoLine('Typ', getTypeLabel(title.media_type)));
+    content.appendChild(createInfoLine('Rok', releaseYearText));
+    content.appendChild(createInfoLine(primaryDate.label, primaryDateText));
+    content.appendChild(createInfoLine('Hodnocení', formatRating(title.rating_value)));
+    content.appendChild(createInfoLine('Původní jazyk', languageText));
+
+    content.appendChild(
+      createProfileStatusSection(title, {
+        activeProfileId,
+        onUpdateTitleStatus,
+        onClearTitleStatus,
+      }),
+    );
+
+    content.appendChild(createServiceLaunchSection(services));
+
+    content.appendChild(
+      createExternalLinksRefreshSection(title, {
+        onRefreshExternalLinks,
+      }),
+    );
+
+    content.appendChild(createInfoLine('Žánry', genreNames));
+    content.appendChild(description);
+
+    wrapper.appendChild(poster);
+    wrapper.appendChild(content);
+
+    container.appendChild(wrapper);
+  }
+
   window.WatchHubRenderers = {
     createCatalogCard,
     createNewsCard,
@@ -380,5 +452,6 @@
     createProfileStatusSection,
     renderDetailLoading,
     renderDetailError,
+    renderTitleDetail,
   };
 })();
