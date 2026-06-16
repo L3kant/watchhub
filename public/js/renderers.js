@@ -653,6 +653,47 @@
     messageElement.textContent = `Načteno služeb: ${services.length}`;
   }
 
+  function renderAdminProfiles(messageElement, tableBody, profilesData) {
+    if (!messageElement || !tableBody) {
+      return;
+    }
+
+    if (!Array.isArray(profilesData) || profilesData.length === 0) {
+      messageElement.textContent = 'Nejsou dostupná žádná data o profilech.';
+      tableBody.innerHTML = '';
+      return;
+    }
+
+    tableBody.innerHTML = profilesData
+      .map((profile) => {
+        const activeText = profile.active_flag ? 'Aktivní' : 'Neaktivní';
+        const adminText = profile.is_admin ? 'admin' : 'běžný profil';
+
+        return `
+        <tr>
+          <td>
+            <strong>${escapeHtml(profile.profile_name)}</strong>
+            <div class="admin-table-subtext">
+              ${adminText}
+              · avatar: ${escapeHtml(profile.avatar_key || '—')}
+              · barva: ${escapeHtml(profile.color_key || '—')}
+            </div>
+          </td>
+          <td>${activeText}</td>
+          <td>${formatAdminNumber(profile.max_age_rating)}</td>
+          <td>${formatAdminNumber(profile.blocked_services_count)}</td>
+          <td>${formatAdminNumber(profile.planned_count)}</td>
+          <td>${formatAdminNumber(profile.watched_count)}</td>
+          <td>${formatAdminNumber(profile.hidden_count)}</td>
+          <td>${formatAdminNumber(profile.statuses_count)}</td>
+        </tr>
+      `;
+      })
+      .join('');
+
+    messageElement.textContent = `Načteno profilů: ${profilesData.length}`;
+  }
+
   window.WatchHubRenderers = {
     createCatalogCard,
     createNewsCard,
@@ -667,5 +708,6 @@
     renderAdminStatusCard,
     renderAdminStatus,
     renderAdminServices,
+    renderAdminProfiles,
   };
 })();
