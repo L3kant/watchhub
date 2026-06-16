@@ -35,15 +35,7 @@ const {
   escapeHtml,
 } = window.WatchHubFormatters;
 
-const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w342';
-
-const PROFILE_STORAGE_KEY = 'watchhub.activeProfileId';
-
-const PROFILE_TITLE_STATUSES = [
-  { value: 'planned', label: 'Chci vidět' },
-  { value: 'watched', label: 'Zhlédnuto' },
-  { value: 'hidden', label: 'Skrýt' },
-];
+const { TMDB_IMAGE_BASE_URL, PROFILE_STORAGE_KEY, PROFILE_TITLE_STATUSES } = window.WatchHubConfig;
 
 const profileSelect = document.querySelector('#profileSelect');
 
