@@ -44,6 +44,7 @@ const {
   renderDetailLoading,
   renderDetailError,
   renderTitleDetail,
+  renderTitleGrid,
 } = window.WatchHubRenderers;
 
 const { fetchJson } = window.WatchHubApi;
@@ -158,19 +159,12 @@ function createAppNewsCard(item) {
 }
 
 function renderCatalog(titles) {
-  catalogElement.innerHTML = '';
-
-  if (titles.length === 0) {
-    catalogElement.innerHTML = '<p>Nenalezen žádný titul.</p>';
-    catalogStatus.textContent = 'Zobrazeno titulů: 0';
-    return;
-  }
-
-  for (const title of titles) {
-    catalogElement.appendChild(createAppCatalogCard(title));
-  }
-
-  catalogStatus.textContent = `Zobrazeno titulů: ${titles.length}`;
+  renderTitleGrid(catalogElement, titles, {
+    statusElement: catalogStatus,
+    createCard: createAppCatalogCard,
+    emptyText: 'Nenalezen žádný titul.',
+    getStatusText: (count) => `Zobrazeno titulů: ${count}`,
+  });
 }
 
 function renderAdminStatusCard(label, value, note = '') {

@@ -444,6 +444,50 @@
     container.appendChild(wrapper);
   }
 
+  function renderTitleGrid(container, titles, options = {}) {
+    const {
+      statusElement,
+      createCard,
+      emptyText = 'Nenalezen žádný titul.',
+      getStatusText,
+    } = options;
+
+    if (!container) {
+      return;
+    }
+
+    const safeTitles = Array.isArray(titles) ? titles : [];
+
+    container.innerHTML = '';
+
+    if (safeTitles.length === 0) {
+      const emptyMessage = document.createElement('p');
+      emptyMessage.textContent = emptyText;
+
+      container.appendChild(emptyMessage);
+
+      if (statusElement) {
+        statusElement.textContent =
+          typeof getStatusText === 'function' ? getStatusText(0) : 'Zobrazeno titulů: 0';
+      }
+
+      return;
+    }
+
+    for (const title of safeTitles) {
+      if (typeof createCard === 'function') {
+        container.appendChild(createCard(title));
+      }
+    }
+
+    if (statusElement) {
+      statusElement.textContent =
+        typeof getStatusText === 'function'
+          ? getStatusText(safeTitles.length)
+          : `Zobrazeno titulů: ${safeTitles.length}`;
+    }
+  }
+
   window.WatchHubRenderers = {
     createCatalogCard,
     createNewsCard,
@@ -453,5 +497,6 @@
     renderDetailLoading,
     renderDetailError,
     renderTitleDetail,
+    renderTitleGrid,
   };
 })();
