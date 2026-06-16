@@ -298,6 +298,69 @@ function getPreferredStreamingOption(options, motnServiceId) {
   return subscriptionOption || matchingOptions[0];
 }
 
+function createTitleIdPlaceholders(titleIds) {
+  return titleIds.map(() => '?').join(', ');
+}
+
+function getServicesByTitleIds(titleIds, options = {}) {
+  if (!Array.isArray(titleIds) || titleIds.length === 0) {
+    return new Map();
+  }
+
+  const blockedServices = Array.isArray(options.blockedServices) ? options.blockedServices : [];
+  const activeOnly = options.activeOnly === true;
+
+  const placeholders = createTitleIdPlaceholders(titleIds);
+  const params = [...titleIds];
+
+  const activeServiceSql = activeOnly ? 'AND ss.active_flag = 1' : '';
+
+  let blockedServicesSql = '';
+
+  if (blockedServices.length > 0) {
+    blockedServicesSql = `
+      AND ts.service_id NOT IN (${blockedServices.map(() => '?').join(', ')})
+    `;
+
+    params.push(...blockedServices);
+  }
+
+  const serviceRows = db
+    .prepare(
+      `
+      SELECT
+        ts.title_id,
+        ss.service_id,
+        ss.service_name,
+        ts.official_url
+      FROM title_services ts
+      JOIN streaming_services ss
+        ON ss.service_id = ts.service_id
+      WHERE ts.title_id IN (${placeholders})
+        ${activeServiceSql}
+        ${blockedServicesSql}
+      ORDER BY ss.service_name ASC
+    `,
+    )
+    .all(...params);
+
+  const servicesByTitleId = new Map();
+
+  for (const row of serviceRows) {
+    if (!servicesByTitleId.has(row.title_id)) {
+      servicesByTitleId.set(row.title_id, []);
+    }
+
+    servicesByTitleId.get(row.title_id).push({
+      service_id: row.service_id,
+      service_name: row.service_name,
+      official_url: row.official_url,
+    });
+  }
+
+  return servicesByTitleId;
+}
+
 function buildCatalogWhereClause(filters, profile) {
   const conditions = [];
   const params = [];
@@ -503,7 +566,7 @@ router.get('/new', (req, res) => {
           mt.rating_value,
           mt.runtime_minutes,
           mt.original_language,
-pts.status AS profile_status,
+          pts.status AS profile_status,
           ss.service_id,
           ss.service_name,
 
@@ -513,9 +576,9 @@ pts.status AS profile_status,
           ON mt.title_id = ts.title_id
         JOIN streaming_services ss
           ON ss.service_id = ts.service_id
-          LEFT JOIN profile_title_statuses pts
-  ON pts.title_id = mt.title_id
-  AND pts.profile_id = ?
+        LEFT JOIN profile_title_statuses pts
+          ON pts.title_id = mt.title_id
+          AND pts.profile_id = ?
         WHERE ${conditions.join(' AND ')}
         ORDER BY
           datetime(ts.created_at) DESC,
@@ -628,12 +691,12 @@ router.get('/new-movies', (req, res) => {
           mt.rating_value,
           mt.runtime_minutes,
           mt.original_language,
-pts.status AS profile_status
+          pts.status AS profile_status
         FROM media_titles mt
-LEFT JOIN profile_title_statuses pts
-  ON pts.title_id = mt.title_id
-  AND pts.profile_id = ?
-WHERE ${conditions.join(' AND ')}
+        LEFT JOIN profile_title_statuses pts
+          ON pts.title_id = mt.title_id
+          AND pts.profile_id = ?
+        WHERE ${conditions.join(' AND ')}
         ORDER BY
           date(mt.release_date) DESC,
           mt.display_title COLLATE NOCASE ASC
@@ -654,50 +717,10 @@ WHERE ${conditions.join(' AND ')}
     }
 
     const titleIds = movies.map((movie) => movie.title_id);
-    const placeholders = titleIds.map(() => '?').join(', ');
-    const serviceParams = [...titleIds];
-    let blockedServicesSql = '';
-
-    if (blockedServices.length > 0) {
-      blockedServicesSql = `
-        AND ts.service_id NOT IN (${blockedServices.map(() => '?').join(', ')})
-      `;
-
-      serviceParams.push(...blockedServices);
-    }
-
-    const serviceRows = db
-      .prepare(
-        `
-        SELECT
-          ts.title_id,
-          ss.service_id,
-          ss.service_name,
-          ts.official_url
-        FROM title_services ts
-        JOIN streaming_services ss
-          ON ss.service_id = ts.service_id
-        WHERE ts.title_id IN (${placeholders})
-          AND ss.active_flag = 1
-          ${blockedServicesSql}
-        ORDER BY ss.service_name ASC
-      `,
-      )
-      .all(...serviceParams);
-
-    const servicesByTitleId = new Map();
-
-    for (const row of serviceRows) {
-      if (!servicesByTitleId.has(row.title_id)) {
-        servicesByTitleId.set(row.title_id, []);
-      }
-
-      servicesByTitleId.get(row.title_id).push({
-        service_id: row.service_id,
-        service_name: row.service_name,
-        official_url: row.official_url,
-      });
-    }
+    const servicesByTitleId = getServicesByTitleIds(titleIds, {
+      blockedServices,
+      activeOnly: true,
+    });
 
     const data = movies.map((movie) => ({
       ...movie,
@@ -808,12 +831,12 @@ router.get('/new-series', (req, res) => {
           mt.rating_value,
           mt.runtime_minutes,
           mt.original_language,
-pts.status AS profile_status
+          pts.status AS profile_status
         FROM media_titles mt
-LEFT JOIN profile_title_statuses pts
-  ON pts.title_id = mt.title_id
-  AND pts.profile_id = ?
-WHERE ${conditions.join(' AND ')}
+        LEFT JOIN profile_title_statuses pts
+          ON pts.title_id = mt.title_id
+          AND pts.profile_id = ?
+        WHERE ${conditions.join(' AND ')}
         ORDER BY
           date(mt.first_air_date) DESC,
           mt.display_title COLLATE NOCASE ASC
@@ -834,50 +857,10 @@ WHERE ${conditions.join(' AND ')}
     }
 
     const titleIds = series.map((item) => item.title_id);
-    const placeholders = titleIds.map(() => '?').join(', ');
-    const serviceParams = [...titleIds];
-    let blockedServicesSql = '';
-
-    if (blockedServices.length > 0) {
-      blockedServicesSql = `
-        AND ts.service_id NOT IN (${blockedServices.map(() => '?').join(', ')})
-      `;
-
-      serviceParams.push(...blockedServices);
-    }
-
-    const serviceRows = db
-      .prepare(
-        `
-        SELECT
-          ts.title_id,
-          ss.service_id,
-          ss.service_name,
-          ts.official_url
-        FROM title_services ts
-        JOIN streaming_services ss
-          ON ss.service_id = ts.service_id
-        WHERE ts.title_id IN (${placeholders})
-          AND ss.active_flag = 1
-          ${blockedServicesSql}
-        ORDER BY ss.service_name ASC
-      `,
-      )
-      .all(...serviceParams);
-
-    const servicesByTitleId = new Map();
-
-    for (const row of serviceRows) {
-      if (!servicesByTitleId.has(row.title_id)) {
-        servicesByTitleId.set(row.title_id, []);
-      }
-
-      servicesByTitleId.get(row.title_id).push({
-        service_id: row.service_id,
-        service_name: row.service_name,
-        official_url: row.official_url,
-      });
-    }
+    const servicesByTitleId = getServicesByTitleIds(titleIds, {
+      blockedServices,
+      activeOnly: true,
+    });
 
     const data = series.map((item) => ({
       ...item,
@@ -921,32 +904,32 @@ router.get('/:titleId', (req, res) => {
     const title = db
       .prepare(
         `
-    SELECT
-      mt.title_id,
-      mt.tmdb_id,
-      mt.media_type,
-      mt.display_title,
-      mt.original_title,
-      mt.overview_text,
-      mt.release_year,
-      mt.release_date,
-      mt.first_air_date,
-      mt.last_air_date,
-      mt.latest_season_air_date,
-      mt.age_rating,
-      mt.age_rating_country,
-      mt.adult_flag,
-      mt.poster_path,
-      mt.rating_value,
-      mt.runtime_minutes,
-      mt.original_language,
-      pts.status AS profile_status
-    FROM media_titles mt
-    LEFT JOIN profile_title_statuses pts
-      ON pts.title_id = mt.title_id
-      AND pts.profile_id = ?
-    WHERE mt.title_id = ?
-  `,
+        SELECT
+          mt.title_id,
+          mt.tmdb_id,
+          mt.media_type,
+          mt.display_title,
+          mt.original_title,
+          mt.overview_text,
+          mt.release_year,
+          mt.release_date,
+          mt.first_air_date,
+          mt.last_air_date,
+          mt.latest_season_air_date,
+          mt.age_rating,
+          mt.age_rating_country,
+          mt.adult_flag,
+          mt.poster_path,
+          mt.rating_value,
+          mt.runtime_minutes,
+          mt.original_language,
+          pts.status AS profile_status
+        FROM media_titles mt
+        LEFT JOIN profile_title_statuses pts
+          ON pts.title_id = mt.title_id
+          AND pts.profile_id = ?
+        WHERE mt.title_id = ?
+      `,
       )
       .get(profileId || null, titleId);
 
@@ -1205,11 +1188,11 @@ router.get('/', (req, res) => {
           mt.rating_value,
           mt.runtime_minutes,
           mt.original_language,
-            pts.status AS profile_status
+          pts.status AS profile_status
         FROM media_titles mt
         LEFT JOIN profile_title_statuses pts
-  ON pts.title_id = mt.title_id
-  AND pts.profile_id = ?
+          ON pts.title_id = mt.title_id
+          AND pts.profile_id = ?
         ${whereSql}
         ORDER BY mt.rating_value DESC, mt.display_title ASC
         LIMIT ?
@@ -1227,41 +1210,12 @@ router.get('/', (req, res) => {
     }
 
     const titleIds = titles.map((title) => title.title_id);
-    const placeholders = titleIds.map(() => '?').join(', ');
+    const placeholders = createTitleIdPlaceholders(titleIds);
 
     const blockedServices = profile?.blocked_services || [];
-    const serviceParams = [...titleIds];
-    let blockedServicesSql = '';
-
-    if (blockedServices.length > 0) {
-      blockedServicesSql = `
-    AND ts.service_id NOT IN (${blockedServices.map(() => '?').join(', ')})
-  `;
-
-      serviceParams.push(...blockedServices);
-    }
-
-    const serviceRows = db
-      .prepare(
-        `
-    SELECT
-      ts.title_id,
-      ss.service_id,
-      ss.service_name,
-      ss.motn_service_id,
-      ts.official_url,
-      ts.external_url,
-      ts.external_url_source,
-      ts.external_url_synced_at
-    FROM title_services ts
-    JOIN streaming_services ss
-      ON ss.service_id = ts.service_id
-    WHERE ts.title_id IN (${placeholders})
-      ${blockedServicesSql}
-    ORDER BY ss.service_name ASC
-  `,
-      )
-      .all(...serviceParams);
+    const servicesByTitleId = getServicesByTitleIds(titleIds, {
+      blockedServices,
+    });
 
     const genreRows = db
       .prepare(
@@ -1279,20 +1233,7 @@ router.get('/', (req, res) => {
       )
       .all(...titleIds);
 
-    const servicesByTitleId = new Map();
     const genresByTitleId = new Map();
-
-    for (const row of serviceRows) {
-      if (!servicesByTitleId.has(row.title_id)) {
-        servicesByTitleId.set(row.title_id, []);
-      }
-
-      servicesByTitleId.get(row.title_id).push({
-        service_id: row.service_id,
-        service_name: row.service_name,
-        official_url: row.official_url,
-      });
-    }
 
     for (const row of genreRows) {
       if (!genresByTitleId.has(row.title_id)) {
@@ -1311,7 +1252,7 @@ router.get('/', (req, res) => {
       genres: genresByTitleId.get(title.title_id) || [],
     }));
 
-    res.json({
+    return res.json({
       filters,
       profile,
       count: data.length,
@@ -1324,7 +1265,7 @@ router.get('/', (req, res) => {
       console.error('Failed to load catalog:', error);
     }
 
-    res.status(statusCode).json({
+    return res.status(statusCode).json({
       error: error.message || 'Failed to load catalog',
     });
   }
