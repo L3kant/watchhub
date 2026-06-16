@@ -41,7 +41,12 @@ const { getTypeLabel, getProfileStatusLabel } = window.WatchHubLabels;
 
 const { createPoster, createInfoLine } = window.WatchHubDomHelpers;
 
-const { createCatalogCard, createNewsCard, createServiceLaunchSection } = window.WatchHubRenderers;
+const {
+  createCatalogCard,
+  createNewsCard,
+  createServiceLaunchSection,
+  createExternalLinksRefreshSection,
+} = window.WatchHubRenderers;
 
 const { fetchJson } = window.WatchHubApi;
 
@@ -163,53 +168,6 @@ function getCardDateText(title) {
   }
 
   return 'neznámé datum';
-}
-
-function hasExternalLinks(services) {
-  return (
-    Array.isArray(services) &&
-    services.some((service) => {
-      return (
-        typeof service.external_url === 'string' && service.external_url.startsWith('https://')
-      );
-    })
-  );
-}
-
-function createExternalLinksRefreshSection(title) {
-  const section = document.createElement('section');
-  section.className = 'detail-section';
-
-  const heading = document.createElement('h3');
-  heading.textContent = 'Konkrétní odkazy';
-
-  const description = document.createElement('p');
-  description.className = 'muted-text';
-
-  const services = Array.isArray(title.services) ? title.services : [];
-  const externalLinksExist = hasExternalLinks(services);
-
-  if (externalLinksExist) {
-    description.textContent = 'Konkrétní odkazy jsou uložené v lokální databázi.';
-  } else {
-    description.textContent =
-      'Zatím jsou použité fallback odkazy. Konkrétní odkazy můžeš načíst ručně.';
-  }
-
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'external-links-refresh-button';
-  button.textContent = externalLinksExist ? 'Obnovit konkrétní odkazy' : 'Načíst konkrétní odkazy';
-
-  button.addEventListener('click', () => {
-    refreshExternalLinks(title.title_id, button);
-  });
-
-  section.appendChild(heading);
-  section.appendChild(description);
-  section.appendChild(button);
-
-  return section;
 }
 
 function createProfileStatusSection(title) {
@@ -431,7 +389,11 @@ function renderDetail(title) {
   content.appendChild(createInfoLine('Původní jazyk', languageText));
   content.appendChild(createProfileStatusSection(title));
   content.appendChild(createServiceLaunchSection(services));
-  content.appendChild(createExternalLinksRefreshSection(title));
+  content.appendChild(
+    createExternalLinksRefreshSection(title, {
+      onRefreshExternalLinks: refreshExternalLinks,
+    }),
+  );
   content.appendChild(createInfoLine('Žánry', genreNames));
   content.appendChild(description);
 

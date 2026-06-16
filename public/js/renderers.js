@@ -29,6 +29,17 @@
     return createBadge(label, true);
   }
 
+  function hasExternalLinks(services) {
+    return (
+      Array.isArray(services) &&
+      services.some((service) => {
+        return (
+          typeof service.external_url === 'string' && service.external_url.startsWith('https://')
+        );
+      })
+    );
+  }
+
   function createCatalogCard(title, options = {}) {
     const { onOpenTitle, getCardDateText } = options;
 
@@ -225,9 +236,52 @@
     return section;
   }
 
+  function createExternalLinksRefreshSection(title, options = {}) {
+    const { onRefreshExternalLinks } = options;
+
+    const section = document.createElement('section');
+    section.className = 'detail-section';
+
+    const heading = document.createElement('h3');
+    heading.textContent = 'Konkrétní odkazy';
+
+    const description = document.createElement('p');
+    description.className = 'muted-text';
+
+    const services = Array.isArray(title.services) ? title.services : [];
+    const externalLinksExist = hasExternalLinks(services);
+
+    if (externalLinksExist) {
+      description.textContent = 'Konkrétní odkazy jsou uložené v lokální databázi.';
+    } else {
+      description.textContent =
+        'Zatím jsou použité fallback odkazy. Konkrétní odkazy můžeš načíst ručně.';
+    }
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'external-links-refresh-button';
+    button.textContent = externalLinksExist
+      ? 'Obnovit konkrétní odkazy'
+      : 'Načíst konkrétní odkazy';
+
+    if (typeof onRefreshExternalLinks === 'function') {
+      button.addEventListener('click', () => {
+        onRefreshExternalLinks(title.title_id, button);
+      });
+    }
+
+    section.appendChild(heading);
+    section.appendChild(description);
+    section.appendChild(button);
+
+    return section;
+  }
+
   window.WatchHubRenderers = {
     createCatalogCard,
     createNewsCard,
     createServiceLaunchSection,
+    createExternalLinksRefreshSection,
   };
 })();
