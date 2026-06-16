@@ -41,6 +41,8 @@ const { getTypeLabel, getProfileStatusLabel } = window.WatchHubLabels;
 
 const { createBadge, createPoster, createInfoLine, isSafeExternalUrl } = window.WatchHubDomHelpers;
 
+const { fetchJson } = window.WatchHubApi;
+
 const profileSelect = document.querySelector('#profileSelect');
 
 let profiles = [];
@@ -1213,13 +1215,8 @@ async function loadAdminProfiles() {
 }
 
 async function loadProfiles() {
-  const response = await fetch('/api/profiles');
+  const result = await fetchJson('/api/profiles');
 
-  if (!response.ok) {
-    throw new Error('Nepodařilo se načíst profily.');
-  }
-
-  const result = await response.json();
   profiles = Array.isArray(result.data) ? result.data : [];
 
   const savedProfileId = Number(localStorage.getItem(PROFILE_STORAGE_KEY));
@@ -1311,13 +1308,7 @@ function buildCatalogUrl() {
 
 async function loadGenres() {
   try {
-    const response = await fetch('/api/catalog/genres');
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const result = await response.json();
+    const result = await fetchJson('/api/catalog/genres');
 
     for (const genre of result.data) {
       const option = document.createElement('option');
@@ -1335,13 +1326,7 @@ async function loadCatalog() {
   try {
     catalogStatus.textContent = 'Načítám katalog...';
 
-    const response = await fetch(buildCatalogUrl());
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const result = await response.json();
+    const result = await fetchJson(buildCatalogUrl());
 
     currentTitles = result.data;
     renderCatalog(currentTitles);
