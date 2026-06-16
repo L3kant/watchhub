@@ -37,6 +37,8 @@ const {
 
 const { TMDB_IMAGE_BASE_URL, PROFILE_STORAGE_KEY, PROFILE_TITLE_STATUSES } = window.WatchHubConfig;
 
+const { getTypeLabel, getProfileStatusLabel } = window.WatchHubLabels;
+
 const profileSelect = document.querySelector('#profileSelect');
 
 let profiles = [];
@@ -44,30 +46,6 @@ let activeProfileId = null;
 let activeNewsEndpoint = '/api/catalog/new';
 
 let currentTitles = [];
-
-function getTypeLabel(type) {
-  if (type === 'movie') {
-    return 'Film';
-  }
-
-  if (type === 'tv') {
-    return 'Seriál';
-  }
-
-  return 'Neznámý typ';
-}
-
-function getProfileStatusLabel(status) {
-  if (status === 'watching') {
-    return 'Sleduji';
-  }
-
-  const statusConfig = PROFILE_TITLE_STATUSES.find((item) => {
-    return item.value === status;
-  });
-
-  return statusConfig ? statusConfig.label : 'Bez stavu';
-}
 
 async function createProfileFromForm(event) {
   event.preventDefault();
