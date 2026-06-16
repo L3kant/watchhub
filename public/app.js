@@ -25,6 +25,16 @@ const createProfileAge = document.getElementById('createProfileAge');
 const createProfileColor = document.getElementById('createProfileColor');
 const createProfileMessage = document.getElementById('createProfileMessage');
 
+const {
+  formatRating,
+  formatDate,
+  formatAdminNumber,
+  formatAdminPercent,
+  formatAdminDate,
+  formatAdminBoolean,
+  escapeHtml,
+} = window.WatchHubFormatters;
+
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w342';
 
 const PROFILE_STORAGE_KEY = 'watchhub.activeProfileId';
@@ -65,35 +75,6 @@ function getProfileStatusLabel(status) {
   });
 
   return statusConfig ? statusConfig.label : 'Bez stavu';
-}
-
-function formatRating(ratingValue) {
-  if (ratingValue === null || ratingValue === undefined) {
-    return 'bez hodnocení';
-  }
-
-  return Number(ratingValue).toFixed(1);
-}
-
-function formatDate(value) {
-  if (typeof value !== 'string' || value.trim() === '') {
-    return null;
-  }
-
-  const dateOnly = value.trim().slice(0, 10);
-  const parts = dateOnly.split('-');
-
-  if (parts.length !== 3) {
-    return null;
-  }
-
-  const [year, month, day] = parts;
-
-  if (!year || !month || !day) {
-    return null;
-  }
-
-  return `${day}. ${month}. ${year}`;
 }
 
 async function createProfileFromForm(event) {
@@ -171,27 +152,6 @@ async function createProfileFromForm(event) {
 
     createProfileMessage.textContent = error.message || 'Profil se nepodařilo vytvořit.';
   }
-}
-
-function formatAdminNumber(value) {
-  const number = Number(value || 0);
-  return number.toLocaleString('cs-CZ');
-}
-
-function formatAdminPercent(value) {
-  if (value === null || value === undefined) {
-    return '—';
-  }
-
-  return `${Math.round(Number(value) * 100)} %`;
-}
-
-function formatAdminDate(value) {
-  if (!value) {
-    return '—';
-  }
-
-  return new Date(value).toLocaleString('cs-CZ');
 }
 
 function getPrimaryDate(title) {
@@ -924,10 +884,6 @@ function showDetailError() {
   `;
 }
 
-function formatAdminBoolean(value) {
-  return value ? 'Ano' : 'Ne';
-}
-
 async function refreshExternalLinks(titleId, button) {
   if (!titleId) {
     return;
@@ -1322,15 +1278,6 @@ async function loadAdminProfiles() {
     message.textContent = error.message || 'Přehled profilů se nepodařilo načíst.';
     tableBody.innerHTML = '';
   }
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
 }
 
 async function loadProfiles() {
