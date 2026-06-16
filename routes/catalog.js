@@ -1032,20 +1032,8 @@ router.get('/:titleId', (req, res) => {
       };
     });
 
-    const genres = db
-      .prepare(
-        `
-        SELECT
-          g.genre_id,
-          g.genre_name
-        FROM title_genres tg
-        JOIN media_genres g
-          ON g.genre_id = tg.genre_id
-        WHERE tg.title_id = ?
-        ORDER BY g.genre_name ASC
-      `,
-      )
-      .all(titleId);
+    const genresByTitleId = getGenresByTitleIds([titleId]);
+    const genres = genresByTitleId.get(titleId) || [];
 
     return res.json({
       profile,
