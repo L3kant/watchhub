@@ -10,63 +10,63 @@ Projekt je vedený postupně po malých vývojových krocích. Historie commitů
 
 ## Funkce v aktuálním stavu
 
-* evidence streamovacích služeb
+- evidence streamovacích služeb
 
-* evidence uživatelských předplatných
+- evidence uživatelských předplatných
 
-* synchronizace providerů pro ČR přes TMDb
+- synchronizace providerů pro ČR přes TMDb
 
-* synchronizace žánrů přes TMDb
+- synchronizace žánrů přes TMDb
 
-* synchronizace katalogu filmů a seriálů přes TMDb
+- synchronizace katalogu filmů a seriálů přes TMDb
 
-* zobrazení katalogu ve vanilla HTML/CSS/JavaScript UI
+- zobrazení katalogu ve vanilla HTML/CSS/JavaScript UI
 
-* filtrování podle názvu, služby, typu a žánru
+- filtrování podle názvu, služby, typu a žánru
 
-* detail titulu s metadaty, plakátem, popisem, hodnocením, žánry a dostupnými službami
+- detail titulu s metadaty, plakátem, popisem, hodnocením, žánry a dostupnými službami
 
-* přesnější datumy u filmů a seriálů
+- přesnější datumy u filmů a seriálů
 
-* profily s věkovým limitem
+- profily s věkovým limitem
 
-* profilový watchlist
+- profilový watchlist
 
-* označení titulů jako:
+- označení titulů jako:
 
-  * Chci vidět
-  * Zhlédnuto
-  * Skrýt
+  - Chci vidět
+  - Zhlédnuto
+  - Skrýt
 
-* skrytí titulů podle aktivního profilu
+- skrytí titulů podle aktivního profilu
 
-* sekce Novinky
+- sekce Novinky
 
-* sekce Můj seznam
+- sekce Můj seznam
 
-* sekce Zhlédnuto
+- sekce Zhlédnuto
 
-* základní admin diagnostika
+- základní admin diagnostika
 
-* přehled služeb v admin části
+- přehled služeb v admin části
 
-* přehled profilů v admin části
+- přehled profilů v admin části
 
-* přehled externích odkazů v admin části
+- přehled externích odkazů v admin části
 
-* přehled kvality katalogu v admin části
+- přehled kvality katalogu v admin části
 
-* Movie of the Night odkazy načítané ručně na vyžádání
+- Movie of the Night odkazy načítané ručně na vyžádání
 
-* lokální SQLite cache pro konkrétní externí odkazy
+- lokální SQLite cache pro konkrétní externí odkazy
 
-* lokální počitadlo využití Movie of the Night API limitu
+- lokální počitadlo využití Movie of the Night API limitu
 
-* backend katalogové routy rozdělené do menších helperů
+- backend katalogové routy rozdělené do menších helperů
 
-* frontend helpery rozdělené do menších vanilla JavaScript souborů
+- frontend helpery rozdělené do menších vanilla JavaScript souborů
 
-* frontend renderery rozdělené podle odpovědnosti bez použití frameworku nebo buildu
+- frontend renderery rozdělené podle odpovědnosti bez použití frameworku nebo buildu
 
 ## Co aplikace není
 
@@ -74,37 +74,37 @@ WatchHub není přehrávač streamovaného obsahu.
 
 Aplikace:
 
-* nestahuje video ze streamovacích služeb
-* neobchází DRM
-* nezískává `.m3u8`, `.mpd` ani jiné přímé streamovací URL
-* neukládá hesla, cookies ani session tokeny
-* nepřehrává obsah mimo oficiální streamovací službu
-* nescrapuje účty po přihlášení
-* nereverse-engineeruje interní API Netflixu, Disney+, Maxu ani SkyShowtime
+- nestahuje video ze streamovacích služeb
+- neobchází DRM
+- nezískává `.m3u8`, `.mpd` ani jiné přímé streamovací URL
+- neukládá hesla, cookies ani session tokeny
+- nepřehrává obsah mimo oficiální streamovací službu
+- nescrapuje účty po přihlášení
+- nereverse-engineeruje interní API Netflixu, Disney+, Maxu ani SkyShowtime
 
 WatchHub slouží pouze jako katalog, přehled dostupnosti, profilový filtr, watchlist, novinkový přehled a launcher.
 
 ## Použité technologie
 
-* JavaScript
-* Node.js
-* Express
-* SQLite přes `node:sqlite`
-* SQL
-* HTML
-* CSS
-* vanilla JavaScript
-* CommonJS
+- JavaScript
+- Node.js
+- Express
+- SQLite přes `node:sqlite`
+- SQL
+- HTML
+- CSS
+- vanilla JavaScript
+- CommonJS
 
 Projekt zatím záměrně nepoužívá:
 
-* React
-* Next.js
-* TypeScript
-* Docker
-* ORM
-* frontend build tools
-* přihlašování uživatelů
+- React
+- Next.js
+- TypeScript
+- Docker
+- ORM
+- frontend build tools
+- přihlašování uživatelů
 
 ## Struktura frontendu
 
@@ -112,16 +112,16 @@ Frontend je záměrně postavený bez frameworku a bez build toolů. Jednotlivé
 
 Hlavní rozdělení:
 
-* `public/app.js` — stav aplikace, API orchestrace, event listenery a inicializace
-* `public/js/api.js` — jednoduchý helper pro JSON requesty
-* `public/js/config.js` — sdílené frontend konstanty
-* `public/js/formatters.js` — formátování datumů, čísel, hodnocení a HTML escapování
-* `public/js/labels.js` — převody interních hodnot na české popisky
-* `public/js/domHelpers.js` — malé DOM helpery pro badge, plakát, info řádek a bezpečné odkazy
-* `public/js/titleRenderers.js` — katalogové karty, novinkové karty a grid titulů
-* `public/js/detailRenderers.js` — detail titulu, launchery a profilové akce v detailu
-* `public/js/adminRenderers.js` — admin diagnostické karty a tabulky
-* `public/js/profileRenderers.js` — vykreslení přepínače profilů
+- `public/app.js` — stav aplikace, API orchestrace, event listenery a inicializace
+- `public/js/api.js` — jednoduchý helper pro JSON requesty
+- `public/js/config.js` — sdílené frontend konstanty
+- `public/js/formatters.js` — formátování datumů, čísel, hodnocení a HTML escapování
+- `public/js/labels.js` — převody interních hodnot na české popisky
+- `public/js/domHelpers.js` — malé DOM helpery pro badge, plakát, info řádek a bezpečné odkazy
+- `public/js/titleRenderers.js` — katalogové karty, novinkové karty a grid titulů
+- `public/js/detailRenderers.js` — detail titulu, launchery a profilové akce v detailu
+- `public/js/adminRenderers.js` — admin diagnostické karty a tabulky
+- `public/js/profileRenderers.js` — vykreslení přepínače profilů
 
 Sdílení mezi soubory je řešené přes globální `window.WatchHub...` namespace. Je to jednoduché řešení vhodné pro aktuální výukovou fázi projektu bez bundleru.
 
@@ -146,13 +146,13 @@ Pořadí scriptů v `public/index.html` je důležité:
 
 TMDb je hlavní zdroj:
 
-* providerů
-* katalogových metadat
-* žánrů
-* plakátů
-* popisů
-* hodnocení
-* dostupnosti podle regionu
+- providerů
+- katalogových metadat
+- žánrů
+- plakátů
+- popisů
+- hodnocení
+- dostupnosti podle regionu
 
 TMDb se volá pouze z backendu. Přístupový token patří do `.env` a nesmí být uložený v Gitu.
 
@@ -164,12 +164,12 @@ Movie of the Night je doplňkový zdroj konkrétních webových odkazů na strea
 
 V aktuálním stavu:
 
-* API se volá pouze z backendu
-* odkazy se načítají ručně na vyžádání
-* výsledné odkazy se ukládají do SQLite cache
-* ukládají se pouze běžné bezpečné `https://` webové odkazy
-* nepoužívají se ani neukládají přímé video odkazy
-* lokálně se eviduje využití API limitu
+- API se volá pouze z backendu
+- odkazy se načítají ručně na vyžádání
+- výsledné odkazy se ukládají do SQLite cache
+- ukládají se pouze běžné bezpečné `https://` webové odkazy
+- nepoužívají se ani neukládají přímé video odkazy
+- lokálně se eviduje využití API limitu
 
 ## Lokální instalace
 
@@ -320,62 +320,62 @@ git grep -n "Bearer "
 
 Očekávaný stav:
 
-* `git status` je čistý
-* `.env` není trackovaný
-* `data/` není trackovaná
-* žádná SQLite databáze není trackovaná
-* skutečné API klíče nejsou v Gitu
-* `TMDB_ACCESS_TOKEN` a `MOTN_API_KEY` se objevují pouze jako názvy proměnných nebo placeholdery
-* žádný reálný `Bearer` token není v kódu
+- `git status` je čistý
+- `.env` není trackovaný
+- `data/` není trackovaná
+- žádná SQLite databáze není trackovaná
+- skutečné API klíče nejsou v Gitu
+- `TMDB_ACCESS_TOKEN` a `MOTN_API_KEY` se objevují pouze jako názvy proměnných nebo placeholdery
+- žádný reálný `Bearer` token není v kódu
 
 ## Známé limity
 
-* aplikace je určená pro lokální soukromé použití
-* neobsahuje autentizaci
-* neobsahuje automatizované testy
-* UI je základní a zatím bez většího UX refaktoru
-* `public/app.js` stále obsahuje hlavní orchestrace aplikace a event listenery
-* frontend používá globální `window.WatchHub...` namespace místo ES modulů nebo bundleru
-* `routes/catalog.js` stále obsahuje část složitější katalogové logiky
-* `routes/admin.js` obsahuje více diagnostických endpointů v jednom souboru
-* profilová správa je základní
-* věkové ratingy nejsou plně doplněné
-* runtime u titulů nemusí být doplněný
-* Movie of the Night odkazy se načítají ručně pro konkrétní titul
-* dávkový Movie of the Night sync zatím není implementovaný
-* Filmtoro integrace zatím není implementovaná
-* iVysílání a Stream zatím nejsou implementované
-* aplikace zatím nemá samostatnou navigaci ani výraznější UX strukturu
+- aplikace je určená pro lokální soukromé použití
+- neobsahuje autentizaci
+- neobsahuje automatizované testy
+- UI je základní a zatím bez většího UX refaktoru
+- `public/app.js` stále obsahuje hlavní orchestrace aplikace a event listenery
+- frontend používá globální `window.WatchHub...` namespace místo ES modulů nebo bundleru
+- `routes/catalog.js` stále obsahuje část složitější katalogové logiky
+- `routes/admin.js` obsahuje více diagnostických endpointů v jednom souboru
+- profilová správa je základní
+- věkové ratingy nejsou plně doplněné
+- runtime u titulů nemusí být doplněný
+- Movie of the Night odkazy se načítají ručně pro konkrétní titul
+- dávkový Movie of the Night sync zatím není implementovaný
+- Filmtoro integrace zatím není implementovaná
+- iVysílání a Stream zatím nejsou implementované
+- aplikace zatím nemá samostatnou navigaci ani výraznější UX strukturu
 
 ## Vývojové milníky
 
 ### Dokončeno
 
-* ~~založit Node.js projekt~~
-* ~~přidat Express server~~
-* ~~vytvořit statické HTML rozhraní~~
-* ~~navrhnout SQLite databázi~~
-* ~~přidat první REST API endpointy~~
-* ~~evidovat streamovací služby a předplatná~~
-* ~~přidat TMDb klienta~~
-* ~~synchronizovat providery pro ČR~~
-* ~~synchronizovat žánry~~
-* ~~synchronizovat katalog filmů a seriálů~~
-* ~~zobrazit katalog v UI~~
-* ~~přidat detail titulu~~
-* ~~přidat launchery na služby~~
-* ~~přidat Movie of the Night on-demand odkazy~~
-* ~~ukládat konkrétní odkazy do SQLite cache~~
-* ~~přidat profily a věkové limity~~
-* ~~přidat novinky, nové filmy a nové seriály~~
-* ~~přidat profilové statusy: Chci vidět, Zhlédnuto, Skrýt~~
-* ~~přidat základní admin diagnostiku~~
-* ~~přidat POC checklist~~
-* ~~publikovat POC checkpoint~~
-* ~~označit POC tagem `v0.1.0-poc`~~
-* ~~refaktorovat backend katalogové routy~~
-* ~~extrahovat frontend helpery~~
-* ~~rozdělit frontend renderery do tematických souborů bez buildu~~
+- ~~založit Node.js projekt~~
+- ~~přidat Express server~~
+- ~~vytvořit statické HTML rozhraní~~
+- ~~navrhnout SQLite databázi~~
+- ~~přidat první REST API endpointy~~
+- ~~evidovat streamovací služby a předplatná~~
+- ~~přidat TMDb klienta~~
+- ~~synchronizovat providery pro ČR~~
+- ~~synchronizovat žánry~~
+- ~~synchronizovat katalog filmů a seriálů~~
+- ~~zobrazit katalog v UI~~
+- ~~přidat detail titulu~~
+- ~~přidat launchery na služby~~
+- ~~přidat Movie of the Night on-demand odkazy~~
+- ~~ukládat konkrétní odkazy do SQLite cache~~
+- ~~přidat profily a věkové limity~~
+- ~~přidat novinky, nové filmy a nové seriály~~
+- ~~přidat profilové statusy: Chci vidět, Zhlédnuto, Skrýt~~
+- ~~přidat základní admin diagnostiku~~
+- ~~přidat POC checklist~~
+- ~~publikovat POC checkpoint~~
+- ~~označit POC tagem `v0.1.0-poc`~~
+- ~~refaktorovat backend katalogové routy~~
+- ~~extrahovat frontend helpery~~
+- ~~rozdělit frontend renderery do tematických souborů bez buildu~~
 
 ### Aktuální post-POC refaktor
 
@@ -406,14 +406,14 @@ Tento refaktorový milník navazuje na POC stav a připravuje projekt na další
 
 Doporučený směr další práce:
 
-* zmenšit `routes/catalog.js`
-* zmenšit `routes/admin.js`
-* oddělit opakovanou profilovou logiku
-* oddělit opakované parsování query parametrů
-* sjednotit mapování databázových řádků na API response
-* zjednodušit práci s blokovanými službami
-* ponechat CommonJS a jednoduchou strukturu bez ORM
-* zachovat parametrizované SQL dotazy
+- zmenšit `routes/catalog.js`
+- zmenšit `routes/admin.js`
+- oddělit opakovanou profilovou logiku
+- oddělit opakované parsování query parametrů
+- sjednotit mapování databázových řádků na API response
+- zjednodušit práci s blokovanými službami
+- ponechat CommonJS a jednoduchou strukturu bez ORM
+- zachovat parametrizované SQL dotazy
 
 Backend refaktor má prioritu před UX, protože aplikace už funkčně drží pohromadě a další UX vrstva bude bezpečnější nad přehlednějším backendem.
 
@@ -423,31 +423,31 @@ UX fázi je vhodné řešit až po backend cleanupu.
 
 Možné směry:
 
-* lepší navigace mezi sekcemi
-* sbalení nebo oddělení admin části
-* lepší loading stavy
-* lepší empty stavy
-* lepší error stavy
-* přehlednější detail titulu
-* lepší práce s profily
-* responzivnější layout
-* vizuální odlišení služeb
-* jasnější akce watchlistu
+- lepší navigace mezi sekcemi
+- sbalení nebo oddělení admin části
+- lepší loading stavy
+- lepší empty stavy
+- lepší error stavy
+- přehlednější detail titulu
+- lepší práce s profily
+- responzivnější layout
+- vizuální odlišení služeb
+- jasnější akce watchlistu
 
 Zatím není nutné přecházet na React, Next.js, TypeScript ani frontend build tools.
 
 ### Pozdější rozvoj
 
-* automatizované testy
-* sync history / `sync_runs`
-* dávkový Movie of the Night sync
-* rozšíření o další zdroje
-* iVysílání a Stream
-* volitelná Filmtoro integrace, pokud bude dostupný API key
-* PWA
-* browser extension
-* případné vyhodnocení React/Vite frontendu
-* případný deployment mimo lokální stroj
+- automatizované testy
+- sync history / `sync_runs`
+- dávkový Movie of the Night sync
+- rozšíření o další zdroje
+- iVysílání a Stream
+- volitelná Filmtoro integrace, pokud bude dostupný API key
+- PWA
+- browser extension
+- případné vyhodnocení React/Vite frontendu
+- případný deployment mimo lokální stroj
 
 ## Licence
 
