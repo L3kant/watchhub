@@ -1,12 +1,13 @@
 const fs = require('fs');
-const path = require('path');
+const path = require('node:path');
 const { DatabaseSync } = require('node:sqlite');
+const { getDatabasePath } = require('../database/dbPath');
 
-const dataDir = path.join(__dirname, '..', 'data');
-const dbPath = path.join(dataDir, 'watchhub.sqlite');
+const dbPath = getDatabasePath();
+const dbDir = path.dirname(dbPath);
 const schemaPath = path.join(__dirname, '..', 'database', 'schema.sql');
 
-fs.mkdirSync(dataDir, { recursive: true });
+fs.mkdirSync(dbDir, { recursive: true });
 
 const schema = fs.readFileSync(schemaPath, 'utf-8');
 const db = new DatabaseSync(dbPath);

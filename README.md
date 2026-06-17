@@ -68,6 +68,12 @@ Projekt je vedený postupně po malých vývojových krocích. Historie commitů
 
 - frontend renderery rozdělené podle odpovědnosti bez použití frameworku nebo buildu
 
+- základní backend/API smoke testy přes vestavěný Node.js test runner
+
+- izolovaná testovací SQLite databáze přes `WATCHHUB_DB_PATH`
+
+- katalogová SQL fixture pro automatizované testy
+
 ## Co aplikace není
 
 WatchHub není přehrávač streamovaného obsahu.
@@ -286,6 +292,70 @@ Automatická oprava formátování a lint chyb, pokud je možná:
 npm run fix
 ```
 
+## Automatizované testy
+
+Projekt používá vestavěný Node.js test runner:
+
+```bash
+npm test
+```
+
+Testy jsou zatím zaměřené na základní backend/API smoke scénáře. Cíl není plná test coverage, ale bezpečnostní síť pro další refaktor katalogu, profilů a admin endpointů.
+
+Testy používají izolovanou SQLite databázi mimo běžnou lokální databázi:
+
+```bash
+data/watchhub.sqlite
+```
+
+Testovací databáze se vytváří v dočasné složce a cesta se předává přes proměnnou prostředí:
+
+```bash
+WATCHHUB_DB_PATH=...
+```
+
+Testovací databáze se inicializuje ze souboru:
+
+```bash
+database/schema.sql
+```
+
+Katalogové API testy používají lokální SQL fixture:
+
+```bash
+tests/fixtures/catalogSeed.sql
+```
+
+Aktuálně testy pokrývají zejména:
+
+- základní běh test runneru
+- inicializaci izolované SQLite databáze
+- health endpoint
+- základní katalogový API smoke test
+- skrytí titulů podle profilového statusu hidden
+- filtrování katalogu podle věkového limitu profilu
+- filtrování katalogu podle blokovaných služeb profilu
+
+Automatické testy nesmí volat externí API. Konkrétně netestují:
+
+- TMDb requesty
+- Movie of the Night requesty
+- endpointy vyžadující reálný API klíč nebo internetové připojení
+
+Externí integrace se ověřují ručně přes lokální smoke testy.
+
+Aktuálně platí:
+
+```bash
+npm run check
+```
+
+spouští pouze formátování a lint kontrolu. Testy se zatím spouští samostatně přes:
+
+```bash
+npm test
+```
+
 ## Základní smoke test
 
 Po lokálním spuštění ověř:
@@ -300,6 +370,7 @@ Po lokálním spuštění ověř:
 - Admin přehled se načítá
 - Movie of the Night se nevolá automaticky při otevření detailu
 - `npm run check` projde
+- `npm test` projde
 
 Podrobný POC checklist je v `docs/POC_CHECKLIST.md`.
 
@@ -332,7 +403,7 @@ Očekávaný stav:
 
 - aplikace je určená pro lokální soukromé použití
 - neobsahuje autentizaci
-- neobsahuje automatizované testy
+- automatizované testy zatím pokrývají jen základní backend/API smoke scénáře
 - UI je základní a zatím bez většího UX refaktoru
 - `public/app.js` stále obsahuje hlavní orchestrace aplikace a event listenery
 - frontend používá globální `window.WatchHub...` namespace místo ES modulů nebo bundleru
@@ -438,7 +509,7 @@ Zatím není nutné přecházet na React, Next.js, TypeScript ani frontend build
 
 ### Pozdější rozvoj
 
-- automatizované testy
+- rozšíření automatizovaných testů o další katalogové, profilové a admin scénáře
 - sync history / `sync_runs`
 - dávkový Movie of the Night sync
 - rozšíření o další zdroje

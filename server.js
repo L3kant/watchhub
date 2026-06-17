@@ -46,6 +46,10 @@ app.get('/api/health', (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`WatchHub běží na http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`WatchHub běží na http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;

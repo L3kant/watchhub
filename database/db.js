@@ -1,9 +1,7 @@
-const path = require('node:path');
 const { DatabaseSync } = require('node:sqlite');
+const { getDatabasePath } = require('./dbPath');
 
-const dbPath = path.join(__dirname, '..', 'data', 'watchhub.sqlite');
-
-const db = new DatabaseSync(dbPath);
+const db = new DatabaseSync(getDatabasePath());
 
 db.exec('PRAGMA foreign_keys = ON;');
 
