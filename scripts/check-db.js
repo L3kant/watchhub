@@ -1,11 +1,12 @@
 const fs = require('fs');
-const path = require('path');
 const { DatabaseSync } = require('node:sqlite');
+const { getDatabasePath } = require('../database/dbPath');
 
-const dbPath = path.join(__dirname, '..', 'data', 'watchhub.sqlite');
+const dbPath = getDatabasePath();
 
 if (!fs.existsSync(dbPath)) {
   console.error('Database file does not exist.');
+  console.error(`Path: ${dbPath}`);
   console.error('Run: npm run db:init');
   process.exit(1);
 }
