@@ -25,21 +25,24 @@ const createProfileAge = document.getElementById('createProfileAge');
 const createProfileColor = document.getElementById('createProfileColor');
 const createProfileMessage = document.getElementById('createProfileMessage');
 
+const { getCardDateText } = window.WatchHubFormatters;
+
+const { PROFILE_STORAGE_KEY } = window.WatchHubConfig;
+
 const {
-  formatRating,
-  formatDate,
-  formatAdminNumber,
-  formatAdminPercent,
-  formatAdminDate,
-  formatAdminBoolean,
-  escapeHtml,
-} = window.WatchHubFormatters;
-
-const { PROFILE_STORAGE_KEY, PROFILE_TITLE_STATUSES } = window.WatchHubConfig;
-
-const { getTypeLabel, getProfileStatusLabel } = window.WatchHubLabels;
-
-const { createBadge, createPoster, createInfoLine, isSafeExternalUrl } = window.WatchHubDomHelpers;
+  createCatalogCard,
+  createNewsCard,
+  renderDetailLoading,
+  renderDetailError,
+  renderTitleDetail,
+  renderTitleGrid,
+  renderProfileSelect,
+  renderAdminStatus,
+  renderAdminServices,
+  renderAdminProfiles,
+  renderAdminExternalLinks,
+  renderAdminCatalogQuality,
+} = window.WatchHubRenderers;
 
 const { fetchJson } = window.WatchHubApi;
 
@@ -128,221 +131,6 @@ async function createProfileFromForm(event) {
   }
 }
 
-function getPrimaryDate(title) {
-  if (title.media_type === 'movie') {
-    return {
-      label: 'Datum vydání',
-      value: formatDate(title.release_date),
-    };
-  }
-
-  if (title.media_type === 'tv') {
-    return {
-      label: 'První vysílání',
-      value: formatDate(title.first_air_date),
-    };
-  }
-
-  return {
-    label: 'Datum',
-    value: null,
-  };
-}
-
-function getCardDateText(title) {
-  const primaryDate = getPrimaryDate(title);
-
-  if (primaryDate.value) {
-    return primaryDate.value;
-  }
-
-  if (title.release_year) {
-    return String(title.release_year);
-  }
-
-  return 'neznámé datum';
-}
-
-function createProfileStatusBadge(status) {
-  if (!status) {
-    return null;
-  }
-
-  const label = getProfileStatusLabel(status);
-
-  if (label === 'Bez stavu') {
-    return null;
-  }
-
-  return createBadge(label, true);
-}
-
-function createServiceLaunchSection(services) {
-  const section = document.createElement('section');
-  section.className = 'detail-section';
-
-  const heading = document.createElement('h3');
-  heading.textContent = 'Dostupné na';
-
-  const list = document.createElement('div');
-  list.className = 'detail-services';
-
-  if (!Array.isArray(services) || services.length === 0) {
-    const emptyText = document.createElement('p');
-    emptyText.className = 'muted-text';
-    emptyText.textContent = 'Žádná služba není dostupná.';
-
-    list.appendChild(emptyText);
-    section.appendChild(heading);
-    section.appendChild(list);
-
-    return section;
-  }
-
-  for (const service of services) {
-    const row = document.createElement('div');
-    row.className = 'detail-service-row';
-
-    const serviceName = document.createElement('span');
-    serviceName.className = 'service-name';
-    serviceName.textContent = service.service_name || 'Služba';
-
-    row.appendChild(serviceName);
-
-    if (isSafeExternalUrl(service.launch_url)) {
-      const link = document.createElement('a');
-      link.className = 'service-launch-link';
-      link.href = service.launch_url;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.textContent = service.launch_label || `Otevřít ${serviceName.textContent}`;
-
-      row.appendChild(link);
-    } else {
-      const missingLink = document.createElement('span');
-      missingLink.className = 'muted-text';
-      missingLink.textContent = 'Odkaz není dostupný';
-
-      row.appendChild(missingLink);
-    }
-
-    list.appendChild(row);
-  }
-
-  section.appendChild(heading);
-  section.appendChild(list);
-
-  return section;
-}
-
-function hasExternalLinks(services) {
-  return (
-    Array.isArray(services) &&
-    services.some((service) => {
-      return (
-        typeof service.external_url === 'string' && service.external_url.startsWith('https://')
-      );
-    })
-  );
-}
-
-function createExternalLinksRefreshSection(title) {
-  const section = document.createElement('section');
-  section.className = 'detail-section';
-
-  const heading = document.createElement('h3');
-  heading.textContent = 'Konkrétní odkazy';
-
-  const description = document.createElement('p');
-  description.className = 'muted-text';
-
-  const services = Array.isArray(title.services) ? title.services : [];
-  const externalLinksExist = hasExternalLinks(services);
-
-  if (externalLinksExist) {
-    description.textContent = 'Konkrétní odkazy jsou uložené v lokální databázi.';
-  } else {
-    description.textContent =
-      'Zatím jsou použité fallback odkazy. Konkrétní odkazy můžeš načíst ručně.';
-  }
-
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'external-links-refresh-button';
-  button.textContent = externalLinksExist ? 'Obnovit konkrétní odkazy' : 'Načíst konkrétní odkazy';
-
-  button.addEventListener('click', () => {
-    refreshExternalLinks(title.title_id, button);
-  });
-
-  section.appendChild(heading);
-  section.appendChild(description);
-  section.appendChild(button);
-
-  return section;
-}
-
-function createProfileStatusSection(title) {
-  const section = document.createElement('section');
-  section.className = 'detail-section detail-status-section';
-
-  const heading = document.createElement('h3');
-  heading.textContent = 'Moje sledování';
-
-  const statusText = document.createElement('p');
-  statusText.className = 'muted-text';
-  statusText.textContent = activeProfileId
-    ? `Aktuální stav: ${getProfileStatusLabel(title.profile_status)}`
-    : 'Vyber profil pro použití watchlistu.';
-
-  const actions = document.createElement('div');
-  actions.className = 'detail-status-actions';
-
-  if (!activeProfileId) {
-    section.appendChild(heading);
-    section.appendChild(statusText);
-    section.appendChild(actions);
-
-    return section;
-  }
-
-  for (const statusConfig of PROFILE_TITLE_STATUSES) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'status-action-button';
-    button.textContent = statusConfig.label;
-
-    if (title.profile_status === statusConfig.value) {
-      button.classList.add('is-active');
-    }
-
-    button.addEventListener('click', () => {
-      updateTitleStatus(title.title_id, statusConfig.value);
-    });
-
-    actions.appendChild(button);
-  }
-
-  if (title.profile_status) {
-    const clearButton = document.createElement('button');
-    clearButton.type = 'button';
-    clearButton.className = 'status-action-button danger-button';
-    clearButton.textContent = 'Zrušit stav';
-
-    clearButton.addEventListener('click', () => {
-      clearTitleStatus(title.title_id);
-    });
-
-    actions.appendChild(clearButton);
-  }
-
-  section.appendChild(heading);
-  section.appendChild(statusText);
-  section.appendChild(actions);
-
-  return section;
-}
-
 function openTitleModal() {
   titleModal.hidden = false;
   document.body.classList.add('modal-open');
@@ -353,424 +141,27 @@ function closeTitleModal() {
   document.body.classList.remove('modal-open');
 }
 
-function createCatalogCard(title) {
-  const card = document.createElement('article');
-  card.className = 'title-card';
-  card.tabIndex = 0;
-
-  const poster = createPoster(title, 'title-poster');
-
-  const heading = document.createElement('h3');
-  heading.textContent = title.display_title;
-
-  const meta = document.createElement('p');
-  meta.textContent = `${getTypeLabel(title.media_type)} · ${getCardDateText(title)}`;
-
-  const services = document.createElement('div');
-  services.className = 'badge-list';
-
-  for (const service of title.services || []) {
-    services.appendChild(createBadge(service.service_name));
-  }
-
-  const genres = document.createElement('div');
-  genres.className = 'badge-list';
-
-  for (const genre of title.genres || []) {
-    genres.appendChild(createBadge(genre.genre_name, true));
-  }
-
-  const rating = document.createElement('span');
-  rating.className = 'badge';
-  rating.textContent = `Hodnocení ${formatRating(title.rating_value)}`;
-
-  const profileStatusBadge = createProfileStatusBadge(title.profile_status);
-
-  card.appendChild(poster);
-  card.appendChild(heading);
-  card.appendChild(meta);
-
-  if (profileStatusBadge) {
-    const profileStatusList = document.createElement('div');
-    profileStatusList.className = 'badge-list';
-    profileStatusList.appendChild(profileStatusBadge);
-    card.appendChild(profileStatusList);
-  }
-
-  card.appendChild(services);
-  card.appendChild(genres);
-  card.appendChild(rating);
-
-  card.addEventListener('click', () => {
-    loadTitleDetail(title.title_id);
+function createAppCatalogCard(title) {
+  return createCatalogCard(title, {
+    getCardDateText,
+    onOpenTitle: loadTitleDetail,
   });
+}
 
-  card.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      loadTitleDetail(title.title_id);
-    }
+function createAppNewsCard(item) {
+  return createNewsCard(item, {
+    getCardDateText,
+    onOpenTitle: loadTitleDetail,
   });
-
-  return card;
 }
 
 function renderCatalog(titles) {
-  catalogElement.innerHTML = '';
-
-  if (titles.length === 0) {
-    catalogElement.innerHTML = '<p>Nenalezen žádný titul.</p>';
-    catalogStatus.textContent = 'Zobrazeno titulů: 0';
-    return;
-  }
-
-  for (const title of titles) {
-    catalogElement.appendChild(createCatalogCard(title));
-  }
-
-  catalogStatus.textContent = `Zobrazeno titulů: ${titles.length}`;
-}
-
-function renderAdminStatusCard(label, value, note = '') {
-  return `
-    <article class="admin-card">
-      <div class="admin-card-label">${label}</div>
-      <div class="admin-card-value">${value}</div>
-      ${note ? `<div class="admin-card-note">${note}</div>` : ''}
-    </article>
-  `;
-}
-
-function renderAdminStatus({ status, quota }) {
-  const adminStatusGrid = document.querySelector('#adminStatusGrid');
-  const adminStatusMessage = document.querySelector('#adminStatusMessage');
-
-  if (!adminStatusGrid || !adminStatusMessage) {
-    return;
-  }
-
-  const quotaData = quota && quota.quota ? quota.quota : null;
-
-  const cards = [
-    renderAdminStatusCard(
-      'Služby',
-      `${formatAdminNumber(status.active_services_count)} / ${formatAdminNumber(status.services_count)}`,
-      'aktivní / celkem',
-    ),
-
-    renderAdminStatusCard(
-      'Tituly',
-      formatAdminNumber(status.titles_count),
-      `${formatAdminNumber(status.movies_count)} filmů, ${formatAdminNumber(status.series_count)} seriálů`,
-    ),
-
-    renderAdminStatusCard(
-      'Profily',
-      `${formatAdminNumber(status.active_profiles_count)} / ${formatAdminNumber(status.profiles_count)}`,
-      'aktivní / celkem',
-    ),
-
-    renderAdminStatusCard(
-      'Profilové statusy',
-      formatAdminNumber(status.profile_statuses_count),
-      `${formatAdminNumber(status.planned_count)} v seznamu, ${formatAdminNumber(status.watched_count)} zhlédnuto, ${formatAdminNumber(status.hidden_count)} skryto`,
-    ),
-
-    renderAdminStatusCard(
-      'Externí odkazy',
-      formatAdminNumber(status.external_links_count),
-      `poslední sync: ${formatAdminDate(status.latest_external_url_synced_at)}`,
-    ),
-
-    renderAdminStatusCard(
-      'Movie of the Night',
-      quotaData
-        ? `${formatAdminNumber(quotaData.used)} / ${formatAdminNumber(quotaData.total)}`
-        : '—',
-      quotaData
-        ? `${formatAdminNumber(quotaData.remaining)} zbývá, reset: ${formatAdminDate(quotaData.next_reset_at)}`
-        : 'quota není dostupná',
-    ),
-
-    renderAdminStatusCard(
-      'Využití MOTN limitu',
-      quotaData ? formatAdminPercent(quotaData.consumption_rate) : '—',
-      quotaData && quotaData.source ? quotaData.source : '',
-    ),
-
-    renderAdminStatusCard(
-      'Nově dostupné',
-      formatAdminDate(status.latest_title_service_created_at),
-      'poslední záznam v title_services',
-    ),
-  ];
-
-  adminStatusGrid.innerHTML = cards.join('');
-  adminStatusMessage.textContent = `Aktualizováno: ${formatAdminDate(status.generated_at)}`;
-}
-
-function createNewsCard(item) {
-  const card = document.createElement('article');
-  card.className = 'title-card';
-  card.tabIndex = 0;
-
-  const poster = createPoster(item, 'title-poster');
-
-  const heading = document.createElement('h3');
-  heading.textContent = item.display_title;
-
-  const meta = document.createElement('p');
-  meta.textContent = `${getTypeLabel(item.media_type)} · ${getCardDateText(item)}`;
-
-  const services = document.createElement('div');
-  services.className = 'badge-list';
-
-  if (item.service_name) {
-    services.appendChild(createBadge(item.service_name));
-  }
-
-  for (const service of item.services || []) {
-    services.appendChild(createBadge(service.service_name));
-  }
-
-  const extraInfo = document.createElement('div');
-  extraInfo.className = 'badge-list';
-
-  if (item.available_since) {
-    const availableDate = formatDate(item.available_since) || item.available_since;
-    extraInfo.appendChild(createBadge(`Dostupné od ${availableDate}`, true));
-  }
-
-  const profileStatusBadge = createProfileStatusBadge(item.profile_status);
-
-  if (profileStatusBadge) {
-    extraInfo.appendChild(profileStatusBadge);
-  }
-
-  card.appendChild(poster);
-  card.appendChild(heading);
-  card.appendChild(meta);
-  card.appendChild(services);
-  card.appendChild(extraInfo);
-
-  card.addEventListener('click', () => {
-    loadTitleDetail(item.title_id);
+  renderTitleGrid(catalogElement, titles, {
+    statusElement: catalogStatus,
+    createCard: createAppCatalogCard,
+    emptyText: 'Nenalezen žádný titul.',
+    getStatusText: (count) => `Zobrazeno titulů: ${count}`,
   });
-
-  card.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      loadTitleDetail(item.title_id);
-    }
-  });
-
-  return card;
-}
-
-function renderDetail(title) {
-  const services = Array.isArray(title.services) ? title.services : [];
-  const genres = Array.isArray(title.genres) ? title.genres : [];
-
-  const genreNames =
-    genres.length > 0 ? genres.map((genre) => genre.genre_name).join(', ') : 'Bez žánru';
-
-  const originalTitleText = title.original_title || 'Není dostupný';
-  const releaseYearText = title.release_year || 'neznámý rok';
-  const primaryDate = getPrimaryDate(title);
-  const primaryDateText = primaryDate.value || 'není dostupné';
-  const languageText = title.original_language || 'neznámý jazyk';
-
-  const poster = createPoster(title, 'detail-poster');
-
-  detailElement.innerHTML = '';
-
-  const wrapper = document.createElement('article');
-  wrapper.className = 'detail-card';
-
-  const content = document.createElement('div');
-  content.className = 'detail-content';
-
-  const heading = document.createElement('h2');
-  heading.id = 'modalTitle';
-  heading.textContent = title.display_title;
-
-  const description = document.createElement('p');
-  description.className = 'detail-description';
-  description.textContent = title.overview_text || 'Popis zatím v lokální databázi není.';
-
-  content.appendChild(heading);
-  content.appendChild(createInfoLine('Originální název', originalTitleText));
-  content.appendChild(createInfoLine('Typ', getTypeLabel(title.media_type)));
-  content.appendChild(createInfoLine('Rok', releaseYearText));
-  content.appendChild(createInfoLine(primaryDate.label, primaryDateText));
-  content.appendChild(createInfoLine('Hodnocení', formatRating(title.rating_value)));
-  content.appendChild(createInfoLine('Původní jazyk', languageText));
-  content.appendChild(createProfileStatusSection(title));
-  content.appendChild(createServiceLaunchSection(services));
-  content.appendChild(createExternalLinksRefreshSection(title));
-  content.appendChild(createInfoLine('Žánry', genreNames));
-  content.appendChild(description);
-
-  wrapper.appendChild(poster);
-  wrapper.appendChild(content);
-
-  detailElement.appendChild(wrapper);
-}
-
-function renderAdminProfiles(profilesData) {
-  const message = document.querySelector('#adminProfilesMessage');
-  const tableBody = document.querySelector('#adminProfilesTableBody');
-
-  if (!message || !tableBody) {
-    return;
-  }
-
-  if (!Array.isArray(profilesData) || profilesData.length === 0) {
-    message.textContent = 'Nejsou dostupná žádná data o profilech.';
-    tableBody.innerHTML = '';
-    return;
-  }
-
-  tableBody.innerHTML = profilesData
-    .map((profile) => {
-      const activeText = profile.active_flag ? 'Aktivní' : 'Neaktivní';
-      const adminText = profile.is_admin ? 'admin' : 'běžný profil';
-
-      return `
-        <tr>
-          <td>
-            <strong>${escapeHtml(profile.profile_name)}</strong>
-            <div class="admin-table-subtext">
-              ${adminText}
-              · avatar: ${escapeHtml(profile.avatar_key || '—')}
-              · barva: ${escapeHtml(profile.color_key || '—')}
-            </div>
-          </td>
-          <td>${activeText}</td>
-          <td>${formatAdminNumber(profile.max_age_rating)}</td>
-          <td>${formatAdminNumber(profile.blocked_services_count)}</td>
-          <td>${formatAdminNumber(profile.planned_count)}</td>
-          <td>${formatAdminNumber(profile.watched_count)}</td>
-          <td>${formatAdminNumber(profile.hidden_count)}</td>
-          <td>${formatAdminNumber(profile.statuses_count)}</td>
-        </tr>
-      `;
-    })
-    .join('');
-
-  message.textContent = `Načteno profilů: ${profilesData.length}`;
-}
-
-function renderAdminCatalogQuality(data) {
-  const message = document.querySelector('#adminCatalogQualityMessage');
-  const summaryElement = document.querySelector('#adminCatalogQualitySummary');
-  const typeTableBody = document.querySelector('#adminCatalogQualityTypeTableBody');
-  const recentTableBody = document.querySelector('#adminCatalogQualityRecentTableBody');
-
-  if (!message || !summaryElement || !typeTableBody || !recentTableBody) {
-    return;
-  }
-
-  const summary = data && data.summary ? data.summary : {};
-  const byType = Array.isArray(data.by_type) ? data.by_type : [];
-  const recentlyUpdated = Array.isArray(data.recently_updated) ? data.recently_updated : [];
-
-  summaryElement.innerHTML = [
-    renderAdminStatusCard(
-      'Tituly celkem',
-      formatAdminNumber(summary.titles_count),
-      `${formatAdminNumber(summary.movies_count)} filmů, ${formatAdminNumber(summary.series_count)} seriálů`,
-    ),
-    renderAdminStatusCard(
-      'Chybí plakát',
-      formatAdminNumber(summary.missing_poster_count),
-      'poster_path je prázdný',
-    ),
-    renderAdminStatusCard(
-      'Chybí popis',
-      formatAdminNumber(summary.missing_overview_count),
-      'overview_text je prázdný',
-    ),
-    renderAdminStatusCard(
-      'Chybí datum',
-      `${formatAdminNumber(summary.missing_movie_release_date_count)} / ${formatAdminNumber(summary.missing_series_first_air_date_count)}`,
-      'filmy release_date / seriály first_air_date',
-    ),
-    renderAdminStatusCard(
-      'Chybí délka',
-      formatAdminNumber(summary.missing_runtime_count),
-      'runtime_minutes zatím často nebude doplněný',
-    ),
-    renderAdminStatusCard(
-      'Chybí věkový rating',
-      formatAdminNumber(summary.missing_age_rating_count),
-      'age_rating zatím není plně naplněný',
-    ),
-    renderAdminStatusCard(
-      'Bez žánrů',
-      formatAdminNumber(summary.missing_genres_count),
-      'tituly bez vazby v title_genres',
-    ),
-    renderAdminStatusCard(
-      'Bez služby',
-      formatAdminNumber(summary.missing_services_count),
-      'tituly bez vazby v title_services',
-    ),
-  ].join('');
-
-  if (byType.length === 0) {
-    typeTableBody.innerHTML = `
-      <tr>
-        <td colspan="5">Nejsou dostupná žádná data podle typu.</td>
-      </tr>
-    `;
-  } else {
-    typeTableBody.innerHTML = byType
-      .map((item) => {
-        return `
-          <tr>
-            <td>${escapeHtml(getTypeLabel(item.media_type))}</td>
-            <td>${formatAdminNumber(item.titles_count)}</td>
-            <td>${formatAdminNumber(item.missing_poster_count)}</td>
-            <td>${formatAdminNumber(item.missing_overview_count)}</td>
-            <td>${formatAdminNumber(item.missing_runtime_count)}</td>
-          </tr>
-        `;
-      })
-      .join('');
-  }
-
-  if (recentlyUpdated.length === 0) {
-    recentTableBody.innerHTML = `
-      <tr>
-        <td colspan="8">Nejsou dostupné žádné aktualizované tituly.</td>
-      </tr>
-    `;
-  } else {
-    recentTableBody.innerHTML = recentlyUpdated
-      .map((title) => {
-        return `
-          <tr>
-            <td>
-              <strong>${escapeHtml(title.display_title)}</strong>
-              <div class="admin-table-subtext">
-                title_id: ${formatAdminNumber(title.title_id)}
-              </div>
-            </td>
-            <td>${escapeHtml(getTypeLabel(title.media_type))}</td>
-            <td>${formatAdminBoolean(title.has_poster)}</td>
-            <td>${formatAdminBoolean(title.has_overview)}</td>
-            <td>${formatAdminBoolean(title.has_runtime)}</td>
-            <td>${formatAdminBoolean(title.has_language)}</td>
-            <td>${formatAdminBoolean(title.has_rating)}</td>
-            <td>${formatAdminDate(title.updated_at)}</td>
-          </tr>
-        `;
-      })
-      .join('');
-  }
-
-  message.textContent = 'Přehled kvality katalogu načten.';
 }
 
 async function loadAdminCatalogQuality() {
@@ -793,7 +184,13 @@ async function loadAdminCatalogQuality() {
       throw new Error(payload.error || 'Nepodařilo se načíst kvalitu katalogu.');
     }
 
-    renderAdminCatalogQuality(payload.data);
+    renderAdminCatalogQuality(
+      message,
+      summaryElement,
+      typeTableBody,
+      recentTableBody,
+      payload.data,
+    );
   } catch (error) {
     console.error('Failed to load admin catalog quality:', error);
 
@@ -802,20 +199,6 @@ async function loadAdminCatalogQuality() {
     typeTableBody.innerHTML = '';
     recentTableBody.innerHTML = '';
   }
-}
-
-function showDetailLoading() {
-  detailElement.innerHTML = `
-    <h2 id="modalTitle">Detail titulu</h2>
-    <p>Načítám detail titulu...</p>
-  `;
-}
-
-function showDetailError() {
-  detailElement.innerHTML = `
-    <h2 id="modalTitle">Detail titulu</h2>
-    <p>Detail titulu se nepodařilo načíst.</p>
-  `;
 }
 
 async function refreshExternalLinks(titleId, button) {
@@ -925,7 +308,7 @@ async function loadTitleDetail(titleId) {
   }
 
   openTitleModal();
-  showDetailLoading();
+  renderDetailLoading(detailElement);
 
   try {
     const params = new URLSearchParams();
@@ -948,146 +331,16 @@ async function loadTitleDetail(titleId) {
 
     const result = await response.json();
 
-    renderDetail(result.data);
+    renderTitleDetail(detailElement, result.data, {
+      activeProfileId,
+      onUpdateTitleStatus: updateTitleStatus,
+      onClearTitleStatus: clearTitleStatus,
+      onRefreshExternalLinks: refreshExternalLinks,
+    });
   } catch (error) {
     console.error('Failed to load title detail:', error);
-    showDetailError();
+    renderDetailError(detailElement);
   }
-}
-
-function renderAdminServices(services) {
-  const message = document.querySelector('#adminServicesMessage');
-  const tableBody = document.querySelector('#adminServicesTableBody');
-
-  if (!message || !tableBody) {
-    return;
-  }
-
-  if (!Array.isArray(services) || services.length === 0) {
-    message.textContent = 'Nejsou dostupná žádná data o službách.';
-    tableBody.innerHTML = '';
-    return;
-  }
-
-  tableBody.innerHTML = services
-    .map((service) => {
-      const activeText = service.active_flag ? 'Aktivní' : 'Neaktivní';
-
-      return `
-        <tr>
-          <td>
-            <strong>${escapeHtml(service.service_name)}</strong>
-            <div class="admin-table-subtext">
-              provider: ${escapeHtml(service.provider_key || '—')}
-              · MOTN: ${escapeHtml(service.motn_service_id || '—')}
-            </div>
-          </td>
-          <td>${activeText}</td>
-          <td>${formatAdminNumber(service.titles_count)}</td>
-          <td>${formatAdminNumber(service.movies_count)}</td>
-          <td>${formatAdminNumber(service.series_count)}</td>
-          <td>${formatAdminNumber(service.external_links_count)}</td>
-          <td>${formatAdminDate(service.latest_external_url_synced_at)}</td>
-        </tr>
-      `;
-    })
-    .join('');
-
-  message.textContent = `Načteno služeb: ${services.length}`;
-}
-
-function renderAdminExternalLinks(data) {
-  const message = document.querySelector('#adminExternalLinksMessage');
-  const summaryElement = document.querySelector('#adminExternalLinksSummary');
-  const serviceTableBody = document.querySelector('#adminExternalLinksServiceTableBody');
-  const recentTableBody = document.querySelector('#adminExternalLinksRecentTableBody');
-
-  if (!message || !summaryElement || !serviceTableBody || !recentTableBody) {
-    return;
-  }
-
-  const summary = data && data.summary ? data.summary : {};
-  const byService = Array.isArray(data.by_service) ? data.by_service : [];
-  const recentLinks = Array.isArray(data.recent_links) ? data.recent_links : [];
-
-  summaryElement.innerHTML = [
-    renderAdminStatusCard(
-      'Vazby titul/služba',
-      formatAdminNumber(summary.title_services_count),
-      'celkem v title_services',
-    ),
-    renderAdminStatusCard(
-      'Uložené externí odkazy',
-      formatAdminNumber(summary.external_links_count),
-      'konkrétní odkazy v cache',
-    ),
-    renderAdminStatusCard(
-      'Chybějící externí odkazy',
-      formatAdminNumber(summary.missing_external_links_count),
-      'fallback odkazy stále povolené',
-    ),
-    renderAdminStatusCard(
-      'Poslední sync odkazu',
-      formatAdminDate(summary.latest_external_url_synced_at),
-      `nejstarší: ${formatAdminDate(summary.oldest_external_url_synced_at)}`,
-    ),
-  ].join('');
-
-  if (byService.length === 0) {
-    serviceTableBody.innerHTML = `
-      <tr>
-        <td colspan="5">Nejsou dostupná žádná data podle služby.</td>
-      </tr>
-    `;
-  } else {
-    serviceTableBody.innerHTML = byService
-      .map((service) => {
-        return `
-          <tr>
-            <td>
-              <strong>${escapeHtml(service.service_name)}</strong>
-              <div class="admin-table-subtext">
-                MOTN: ${escapeHtml(service.motn_service_id || '—')}
-              </div>
-            </td>
-            <td>${formatAdminNumber(service.title_services_count)}</td>
-            <td>${formatAdminNumber(service.external_links_count)}</td>
-            <td>${formatAdminNumber(service.missing_external_links_count)}</td>
-            <td>${formatAdminDate(service.latest_external_url_synced_at)}</td>
-          </tr>
-        `;
-      })
-      .join('');
-  }
-
-  if (recentLinks.length === 0) {
-    recentTableBody.innerHTML = `
-      <tr>
-        <td colspan="5">Zatím nejsou uložené žádné externí odkazy.</td>
-      </tr>
-    `;
-  } else {
-    recentTableBody.innerHTML = recentLinks
-      .map((item) => {
-        return `
-          <tr>
-            <td>
-              <strong>${escapeHtml(item.display_title)}</strong>
-              <div class="admin-table-subtext">
-                title_id: ${formatAdminNumber(item.title_id)}
-              </div>
-            </td>
-            <td>${escapeHtml(getTypeLabel(item.media_type))}</td>
-            <td>${escapeHtml(item.service_name)}</td>
-            <td>${escapeHtml(item.external_url_source || '—')}</td>
-            <td>${formatAdminDate(item.external_url_synced_at)}</td>
-          </tr>
-        `;
-      })
-      .join('');
-  }
-
-  message.textContent = 'Přehled externích odkazů načten.';
 }
 
 async function loadAdminExternalLinks() {
@@ -1110,7 +363,13 @@ async function loadAdminExternalLinks() {
       throw new Error(payload.error || 'Nepodařilo se načíst externí odkazy.');
     }
 
-    renderAdminExternalLinks(payload.data);
+    renderAdminExternalLinks(
+      message,
+      summaryElement,
+      serviceTableBody,
+      recentTableBody,
+      payload.data,
+    );
   } catch (error) {
     console.error('Failed to load admin external links:', error);
 
@@ -1139,7 +398,7 @@ async function loadAdminServices() {
       throw new Error(payload.error || 'Nepodařilo se načíst služby.');
     }
 
-    renderAdminServices(payload.data);
+    renderAdminServices(message, tableBody, payload.data);
   } catch (error) {
     console.error('Failed to load admin services:', error);
 
@@ -1175,7 +434,7 @@ async function loadAdminStatus() {
     const statusPayload = await statusResponse.json();
     const quotaPayload = await quotaResponse.json();
 
-    renderAdminStatus({
+    renderAdminStatus(adminStatusGrid, adminStatusMessage, {
       status: statusPayload.data,
       quota: quotaPayload.data,
     });
@@ -1205,7 +464,7 @@ async function loadAdminProfiles() {
       throw new Error(payload.error || 'Nepodařilo se načíst profily.');
     }
 
-    renderAdminProfiles(payload.data);
+    renderAdminProfiles(message, tableBody, payload.data);
   } catch (error) {
     console.error('Failed to load admin profiles:', error);
 
@@ -1234,33 +493,7 @@ async function loadProfiles() {
     localStorage.removeItem(PROFILE_STORAGE_KEY);
   }
 
-  renderProfileSelect();
-}
-
-function renderProfileSelect() {
-  if (!profileSelect) {
-    return;
-  }
-
-  if (profiles.length === 0) {
-    profileSelect.innerHTML = '<option value="">Žádný profil</option>';
-    profileSelect.disabled = true;
-    return;
-  }
-
-  profileSelect.disabled = false;
-
-  profileSelect.innerHTML = profiles
-    .map((profile) => {
-      const selected = profile.profile_id === activeProfileId ? 'selected' : '';
-
-      return `
-        <option value="${profile.profile_id}" ${selected}>
-          ${escapeHtml(profile.profile_name)}
-        </option>
-      `;
-    })
-    .join('');
+  renderProfileSelect(profileSelect, profiles, activeProfileId);
 }
 
 function getActiveProfileParam() {
@@ -1361,17 +594,15 @@ async function loadNews() {
 
   try {
     const result = await fetchJson(`${activeNewsEndpoint}?${params.toString()}`);
+    const items = Array.isArray(result.data) ? result.data : [];
 
-    if (!result.data || result.data.length === 0) {
-      newsStatus.textContent = 'Pro aktuální filtr nejsou dostupné žádné novinky.';
-      return;
-    }
-
-    newsStatus.textContent = '';
-
-    for (const item of result.data) {
-      newsGrid.appendChild(createNewsCard(item));
-    }
+    renderTitleGrid(newsGrid, items, {
+      statusElement: newsStatus,
+      createCard: createAppNewsCard,
+      emptyText: 'Pro aktuální filtr nejsou dostupné žádné novinky.',
+      getStatusText: (count) =>
+        count === 0 ? 'Pro aktuální filtr nejsou dostupné žádné novinky.' : '',
+    });
   } catch (error) {
     console.error('Failed to load news:', error);
     newsStatus.textContent = error.message || 'Nepodařilo se načíst novinky.';
@@ -1399,16 +630,12 @@ async function loadWatchlist() {
 
     const titles = Array.isArray(result.data) ? result.data : [];
 
-    if (titles.length === 0) {
-      watchlistStatus.textContent = 'V mém seznamu zatím není žádný titul.';
-      return;
-    }
-
-    watchlistStatus.textContent = '';
-
-    for (const title of titles) {
-      watchlistGrid.appendChild(createCatalogCard(title));
-    }
+    renderTitleGrid(watchlistGrid, titles, {
+      statusElement: watchlistStatus,
+      createCard: createAppCatalogCard,
+      emptyText: 'V mém seznamu zatím není žádný titul.',
+      getStatusText: (count) => (count === 0 ? 'V mém seznamu zatím není žádný titul.' : ''),
+    });
   } catch (error) {
     console.error('Failed to load watchlist:', error);
     watchlistStatus.textContent = error.message || 'Nepodařilo se načíst můj seznam.';
@@ -1436,16 +663,12 @@ async function loadWatchedList() {
 
     const titles = Array.isArray(result.data) ? result.data : [];
 
-    if (titles.length === 0) {
-      watchedStatus.textContent = 'Zatím není označený žádný zhlédnutý titul.';
-      return;
-    }
-
-    watchedStatus.textContent = '';
-
-    for (const title of titles) {
-      watchedGrid.appendChild(createCatalogCard(title));
-    }
+    renderTitleGrid(watchedGrid, titles, {
+      statusElement: watchedStatus,
+      createCard: createAppCatalogCard,
+      emptyText: 'Zatím není označený žádný zhlédnutý titul.',
+      getStatusText: (count) => (count === 0 ? 'Zatím není označený žádný zhlédnutý titul.' : ''),
+    });
   } catch (error) {
     console.error('Failed to load watched list:', error);
     watchedStatus.textContent = error.message || 'Nepodařilo se načíst zhlédnuté tituly.';

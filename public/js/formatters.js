@@ -28,6 +28,41 @@
     return `${day}. ${month}. ${year}`;
   }
 
+  function getPrimaryDate(title) {
+    if (title.media_type === 'movie') {
+      return {
+        label: 'Datum vydání',
+        value: formatDate(title.release_date),
+      };
+    }
+
+    if (title.media_type === 'tv') {
+      return {
+        label: 'První vysílání',
+        value: formatDate(title.first_air_date),
+      };
+    }
+
+    return {
+      label: 'Datum',
+      value: null,
+    };
+  }
+
+  function getCardDateText(title) {
+    const primaryDate = getPrimaryDate(title);
+
+    if (primaryDate.value) {
+      return primaryDate.value;
+    }
+
+    if (title.release_year) {
+      return String(title.release_year);
+    }
+
+    return 'neznámé datum';
+  }
+
   function formatAdminNumber(value) {
     const number = Number(value || 0);
     return number.toLocaleString('cs-CZ');
@@ -65,6 +100,8 @@
   window.WatchHubFormatters = {
     formatRating,
     formatDate,
+    getPrimaryDate,
+    getCardDateText,
     formatAdminNumber,
     formatAdminPercent,
     formatAdminDate,
