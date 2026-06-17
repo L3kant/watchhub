@@ -1,17 +1,9 @@
 const express = require('express');
 const db = require('../database/db');
 const { getLocalQuotaStatus } = require('../clients/movieOfTheNightClient');
+const { getValue, getCount } = require('./admin/dbHelpers');
 
 const router = express.Router();
-
-function getValue(sql, params = []) {
-  const row = db.prepare(sql).get(...params);
-  return row ? row.value : null;
-}
-
-function getCount(sql, params = []) {
-  return Number(getValue(sql, params) || 0);
-}
 
 router.get('/status', (req, res) => {
   try {
