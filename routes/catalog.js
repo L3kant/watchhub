@@ -16,6 +16,7 @@ const { getServicesByTitleIds, getGenresByTitleIds } = require('./catalog/associ
 const { getTmdbWatchUrl, isSafeExternalLink } = require('./catalog/launchers');
 const { getDetailServicesForTitle } = require('./catalog/detailServices');
 const { buildCatalogWhereClause } = require('./catalog/whereClause');
+const { mapTitleWithServices, mapTitleWithServicesAndGenres } = require('./catalog/mappers');
 
 const router = express.Router();
 
@@ -305,10 +306,7 @@ router.get('/new-movies', (req, res) => {
       activeOnly: true,
     });
 
-    const data = movies.map((movie) => ({
-      ...movie,
-      services: servicesByTitleId.get(movie.title_id) || [],
-    }));
+    const data = movies.map((movie) => mapTitleWithServices(movie, servicesByTitleId));
 
     return res.json({
       filters: {
@@ -445,10 +443,7 @@ router.get('/new-series', (req, res) => {
       activeOnly: true,
     });
 
-    const data = series.map((item) => ({
-      ...item,
-      services: servicesByTitleId.get(item.title_id) || [],
-    }));
+    const data = series.map((item) => mapTitleWithServices(item, servicesByTitleId));
 
     return res.json({
       filters: {
@@ -751,11 +746,9 @@ router.get('/', (req, res) => {
     });
     const genresByTitleId = getGenresByTitleIds(titleIds);
 
-    const data = titles.map((title) => ({
-      ...title,
-      services: servicesByTitleId.get(title.title_id) || [],
-      genres: genresByTitleId.get(title.title_id) || [],
-    }));
+    const data = titles.map((title) =>
+      mapTitleWithServicesAndGenres(title, servicesByTitleId, genresByTitleId),
+    );
 
     return res.json({
       filters,
