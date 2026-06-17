@@ -18,7 +18,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "check": "npm run format:check && npm run lint",
-    "fix": "npm run format && npm run lint:fix"
+    "fix": "npm run format && npm run lint:fix",
+    "test": "node --test"
   },
   "keywords": [],
   "author": "L3kant",
