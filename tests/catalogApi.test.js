@@ -1,139 +1,76 @@
-const test = require('node:test');
+const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
+const path = require('node:path');
 
 const { createTestDatabase } = require('./helpers/testDatabase');
 const { startTestServer, stopTestServer } = require('./helpers/testServer');
 
-function seedCatalog(db) {
-  const serviceResult = db
-    .prepare(
-      `
-      INSERT INTO streaming_services (
-        service_name,
-        provider_key,
-        active_flag
-      )
-      VALUES (?, ?, 1)
-    `,
-    )
-    .run('Netflix', 'netflix');
+const catalogSeedPath = path.join(__dirname, 'fixtures', 'catalogSeed.sql');
 
-  const titleResult = db
-    .prepare(
-      `
-      INSERT INTO media_titles (
-        tmdb_id,
-        media_type,
-        display_title,
-        original_title,
-        release_year,
-        release_date,
-        age_rating,
-        adult_flag,
-        poster_path,
-        rating_value,
-        runtime_minutes,
-        original_language,
-        overview_text
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `,
-    )
-    .run(
-      1001,
-      'movie',
-      'Smoke Movie',
-      'Smoke Movie Original',
-      2024,
-      '2024-01-15',
-      12,
-      0,
-      '/smoke.jpg',
-      7.5,
-      110,
-      'en',
-      'Minimal movie used by API smoke test.',
-    );
+let testDb;
+let appDb;
+let server;
+let baseUrl;
 
-  const genreResult = db
-    .prepare(
-      `
-      INSERT INTO media_genres (
-        genre_name,
-        tmdb_genre_id,
-        media_type
-      )
-      VALUES (?, ?, ?)
-    `,
-    )
-    .run('Drama', 18, 'movie');
+before(async () => {
+  testDb = createTestDatabase({
+    seedPath: catalogSeedPath,
+  });
 
-  db.prepare(
-    `
-    INSERT INTO title_services (
-      title_id,
-      service_id
-    )
-    VALUES (?, ?)
-  `,
-  ).run(titleResult.lastInsertRowid, serviceResult.lastInsertRowid);
+  const app = require('../server');
+  appDb = require('../database/db');
 
-  db.prepare(
-    `
-    INSERT INTO title_genres (
-      title_id,
-      genre_id
-    )
-    VALUES (?, ?)
-  `,
-  ).run(titleResult.lastInsertRowid, genreResult.lastInsertRowid);
-}
+  const testServer = await startTestServer(app);
+
+  server = testServer.server;
+  baseUrl = testServer.baseUrl;
+});
+
+after(async () => {
+  await stopTestServer(server);
+
+  if (appDb) {
+    appDb.close();
+  }
+
+  testDb.cleanup();
+});
 
 test('GET /api/catalog returns seeded catalog item', async () => {
-  const testDb = createTestDatabase();
+  const response = await fetch(`${baseUrl}/api/catalog?limit=5`);
+  const payload = await response.json();
 
-  let app;
-  let appDb;
-  let server;
+  assert.equal(response.status, 200);
+  assert.equal(Array.isArray(payload.data), true);
 
-  try {
-    seedCatalog(testDb.db);
+  const smokeMovie = payload.data.find((title) => {
+    return title.display_title === 'Smoke Movie';
+  });
 
-    app = require('../server');
-    appDb = require('../database/db');
+  assert.ok(smokeMovie);
 
-    const testServer = await startTestServer(app);
+  assert.equal(smokeMovie.media_type, 'movie');
+  assert.equal(smokeMovie.release_year, 2024);
+  assert.equal(smokeMovie.release_date, '2024-01-15');
 
-    server = testServer.server;
+  assert.equal(Array.isArray(smokeMovie.services), true);
+  assert.equal(smokeMovie.services.length, 1);
+  assert.equal(smokeMovie.services[0].service_name, 'Netflix');
 
-    const response = await fetch(`${testServer.baseUrl}/api/catalog?limit=5`);
-    const payload = await response.json();
+  assert.equal(Array.isArray(smokeMovie.genres), true);
+  assert.equal(smokeMovie.genres.length, 1);
+  assert.equal(smokeMovie.genres[0].genre_name, 'Drama');
+});
 
-    assert.equal(response.status, 200);
-    assert.equal(payload.count, 1);
-    assert.equal(Array.isArray(payload.data), true);
+test('GET /api/catalog hides titles marked hidden for selected profile', async () => {
+  const response = await fetch(`${baseUrl}/api/catalog?profile=101`);
+  const payload = await response.json();
 
-    const title = payload.data[0];
+  assert.equal(response.status, 200);
+  assert.equal(Array.isArray(payload.data), true);
 
-    assert.equal(title.display_title, 'Smoke Movie');
-    assert.equal(title.media_type, 'movie');
-    assert.equal(title.release_year, 2024);
-    assert.equal(title.release_date, '2024-01-15');
+  const returnedTitles = payload.data.map((title) => title.display_title);
 
-    assert.equal(Array.isArray(title.services), true);
-    assert.equal(title.services.length, 1);
-    assert.equal(title.services[0].service_name, 'Netflix');
-
-    assert.equal(Array.isArray(title.genres), true);
-    assert.equal(title.genres.length, 1);
-    assert.equal(title.genres[0].genre_name, 'Drama');
-  } finally {
-    await stopTestServer(server);
-
-    if (appDb) {
-      appDb.close();
-    }
-
-    testDb.cleanup();
-  }
+  assert.ok(returnedTitles.includes('Smoke Movie'));
+  assert.equal(returnedTitles.includes('Hidden Movie'), false);
 });
