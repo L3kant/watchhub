@@ -1,7 +1,9 @@
 const express = require('express');
 const db = require('../database/db');
 const { getLocalQuotaStatus } = require('../clients/movieOfTheNightClient');
+
 const { getValue, getCount } = require('./admin/dbHelpers');
+const { parseBlockedServices } = require('./admin/profileHelpers');
 
 const router = express.Router();
 
@@ -384,26 +386,6 @@ router.get('/external-links', (req, res) => {
     });
   }
 });
-
-function parseBlockedServices(value) {
-  if (!value) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(value);
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed
-      .map((serviceId) => Number(serviceId))
-      .filter((serviceId) => Number.isInteger(serviceId) && serviceId > 0);
-  } catch {
-    return [];
-  }
-}
 
 router.get('/profiles', (req, res) => {
   try {
