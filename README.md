@@ -114,6 +114,24 @@ Projekt zatím záměrně nepoužívá:
 - frontend build tools
 - přihlašování uživatelů
 
+## Struktura backend katalogu
+
+Katalogové endpointy jsou vedené přes `routes/catalog.js`. Složitější pomocná logika je rozdělená do menších CommonJS helperů ve složce `routes/catalog/`.
+
+Aktuální rozdělení:
+
+- `routes/catalog/profile.js` — načtení aktivního profilu pro katalogové endpointy
+- `routes/catalog/queryParams.js` — parsování query a route parametrů katalogu
+- `routes/catalog/associations.js` — načítání služeb a žánrů podle titulů
+- `routes/catalog/launchers.js` — bezpečné launcher URL pro streamovací služby
+- `routes/catalog/detailServices.js` — služby v detailu titulu včetně launcher polí
+- `routes/catalog/whereClause.js` — SQL `WHERE` podmínky pro hlavní katalog
+- `routes/catalog/mappers.js` — mapování databázových řádků na API response
+- `routes/catalog/newsVisibility.js` — profilová viditelnost pro nové filmy a nové seriály
+- `routes/catalog/movieOfTheNightOptions.js` — výběr bezpečných Movie of the Night odkazů
+
+Cíl rozdělení není komplexní architektura, ale menší soubory a bezpečnější další refaktor. API response shape zůstává zachovaný.
+
 ## Struktura frontendu
 
 Frontend je záměrně postavený bez frameworku a bez build toolů. Jednotlivé soubory se načítají přímo přes `<script>` tagy v `public/index.html`.
@@ -437,7 +455,7 @@ Očekávaný stav:
 - ~~přidat POC checklist~~
 - ~~publikovat POC checkpoint~~
 - ~~označit POC tagem `v0.1.0-poc`~~
-- ~~refaktorovat backend katalogové routy~~
+- ~~refaktorovat backend katalogové helpery~~
 - ~~extrahovat frontend helpery~~
 - ~~rozdělit frontend renderery do tematických souborů bez buildu~~
 - ~~přidat základní backend/API smoke testy~~
@@ -466,15 +484,11 @@ Tento refaktorový milník navazuje na POC stav a připravuje projekt na další
 
 ### Nejbližší kroky po aktuálním refaktoru
 
-1. pokračovat backend optimalizací
-2. zmenšit a zpřehlednit `routes/catalog.js`
-3. zmenšit a zpřehlednit `routes/admin.js`
-4. oddělit opakovanou validaci query parametrů
-5. oddělit opakovanou profilovou logiku
-6. sjednotit mapování databázových řádků na API response
-7. zachovat jednoduchý CommonJS/Express/SQLite stack bez ORM
-8. až potom řešit větší UX fázi
-9. připravit v1 checklist
+1. zkontrolovat a případně zmenšit `routes/admin.js`
+2. oddělit opakovanou admin diagnostickou logiku
+3. zachovat jednoduchý CommonJS/Express/SQLite stack bez ORM
+4. až potom řešit větší UX fázi
+5. připravit v1 checklist
 
 ### Backend optimalizace
 
