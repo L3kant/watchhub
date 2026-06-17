@@ -3,7 +3,14 @@ const db = require('../database/db');
 
 const { getLocalQuotaStatus } = require('../clients/movieOfTheNightClient');
 const { getValue, getCount } = require('./admin/dbHelpers');
-const { mapAdminServiceRow, mapAdminProfileRow } = require('./admin/mappers');
+const {
+  mapAdminServiceRow,
+  mapAdminProfileRow,
+  mapAdminExternalLinksSummary,
+  mapAdminExternalLinkServiceRow,
+  mapAdminExternalLinkSourceRow,
+  mapAdminExternalLinkRecentRow,
+} = require('./admin/mappers');
 
 const router = express.Router();
 
@@ -326,41 +333,10 @@ router.get('/external-links', (req, res) => {
 
     res.json({
       data: {
-        summary: {
-          title_services_count: Number(summary.title_services_count || 0),
-          external_links_count: Number(summary.external_links_count || 0),
-          missing_external_links_count: Number(summary.missing_external_links_count || 0),
-          oldest_external_url_synced_at: summary.oldest_external_url_synced_at,
-          latest_external_url_synced_at: summary.latest_external_url_synced_at,
-        },
-
-        by_service: byServiceRows.map((row) => ({
-          service_id: row.service_id,
-          service_name: row.service_name,
-          motn_service_id: row.motn_service_id,
-          title_services_count: Number(row.title_services_count || 0),
-          external_links_count: Number(row.external_links_count || 0),
-          missing_external_links_count: Number(row.missing_external_links_count || 0),
-          oldest_external_url_synced_at: row.oldest_external_url_synced_at,
-          latest_external_url_synced_at: row.latest_external_url_synced_at,
-        })),
-
-        by_source: bySourceRows.map((row) => ({
-          source: row.source,
-          external_links_count: Number(row.external_links_count || 0),
-          oldest_external_url_synced_at: row.oldest_external_url_synced_at,
-          latest_external_url_synced_at: row.latest_external_url_synced_at,
-        })),
-
-        recent_links: recentRows.map((row) => ({
-          title_id: row.title_id,
-          display_title: row.display_title,
-          media_type: row.media_type,
-          service_id: row.service_id,
-          service_name: row.service_name,
-          external_url_source: row.external_url_source,
-          external_url_synced_at: row.external_url_synced_at,
-        })),
+        summary: mapAdminExternalLinksSummary(summary),
+        by_service: byServiceRows.map(mapAdminExternalLinkServiceRow),
+        by_source: bySourceRows.map(mapAdminExternalLinkSourceRow),
+        recent_links: recentRows.map(mapAdminExternalLinkRecentRow),
       },
     });
   } catch (error) {
