@@ -132,6 +132,18 @@ Aktuální rozdělení:
 
 Cíl rozdělení není komplexní architektura, ale menší soubory a bezpečnější další refaktor. API response shape zůstává zachovaný.
 
+## Struktura backend adminu
+
+Admin endpointy jsou vedené přes `routes/admin.js`. Soubor stále obsahuje hlavní tok endpointů, diagnostické SQL dotazy a HTTP response handling.
+
+Menší pomocná logika je rozdělená do helperů ve složce `routes/admin/`:
+
+- `routes/admin/dbHelpers.js` — malé DB helpery pro scalar dotazy
+- `routes/admin/profileHelpers.js` — parsování admin profilových hodnot
+- `routes/admin/mappers.js` — mapování databázových řádků na admin API response objekty
+
+SQL dotazy zůstávají záměrně u endpointů v `routes/admin.js`, aby bylo při otevření endpointu vidět, co daný diagnostický report počítá. Cíl není zavádět query builder ani další architektonickou vrstvu.
+
 ## Struktura frontendu
 
 Frontend je záměrně postavený bez frameworku a bez build toolů. Jednotlivé soubory se načítají přímo přes `<script>` tagy v `public/index.html`.
