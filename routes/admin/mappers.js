@@ -87,6 +87,53 @@ function mapAdminExternalLinkRecentRow(row) {
   };
 }
 
+function mapAdminCatalogQualitySummary(summary, missingGenres, missingServices) {
+  return {
+    titles_count: Number(summary.titles_count || 0),
+    movies_count: Number(summary.movies_count || 0),
+    series_count: Number(summary.series_count || 0),
+    missing_poster_count: Number(summary.missing_poster_count || 0),
+    missing_overview_count: Number(summary.missing_overview_count || 0),
+    missing_movie_release_date_count: Number(summary.missing_movie_release_date_count || 0),
+    missing_series_first_air_date_count: Number(summary.missing_series_first_air_date_count || 0),
+    missing_runtime_count: Number(summary.missing_runtime_count || 0),
+    missing_language_count: Number(summary.missing_language_count || 0),
+    missing_rating_count: Number(summary.missing_rating_count || 0),
+    missing_age_rating_count: Number(summary.missing_age_rating_count || 0),
+    missing_genres_count: Number(missingGenres.value || 0),
+    missing_services_count: Number(missingServices.value || 0),
+    adult_titles_count: Number(summary.adult_titles_count || 0),
+    latest_title_created_at: summary.latest_title_created_at,
+    latest_title_updated_at: summary.latest_title_updated_at,
+  };
+}
+
+function mapAdminCatalogQualityTypeRow(row) {
+  return {
+    media_type: row.media_type,
+    titles_count: Number(row.titles_count || 0),
+    missing_poster_count: Number(row.missing_poster_count || 0),
+    missing_overview_count: Number(row.missing_overview_count || 0),
+    missing_runtime_count: Number(row.missing_runtime_count || 0),
+  };
+}
+
+function mapAdminCatalogQualityRecentTitleRow(row) {
+  return {
+    title_id: row.title_id,
+    display_title: row.display_title,
+    media_type: row.media_type,
+    release_date: row.release_date,
+    first_air_date: row.first_air_date,
+    has_poster: Boolean(row.poster_path),
+    has_overview: Boolean(row.overview_text),
+    has_runtime: row.runtime_minutes !== null,
+    has_language: Boolean(row.original_language),
+    has_rating: row.rating_value !== null,
+    updated_at: row.updated_at,
+  };
+}
+
 module.exports = {
   mapAdminServiceRow,
   mapAdminProfileRow,
@@ -94,4 +141,7 @@ module.exports = {
   mapAdminExternalLinkServiceRow,
   mapAdminExternalLinkSourceRow,
   mapAdminExternalLinkRecentRow,
+  mapAdminCatalogQualitySummary,
+  mapAdminCatalogQualityTypeRow,
+  mapAdminCatalogQualityRecentTitleRow,
 };
