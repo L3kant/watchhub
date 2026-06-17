@@ -2,26 +2,23 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const { createTestDatabase } = require('./helpers/testDatabase');
+const { startTestServer, stopTestServer } = require('./helpers/testServer');
 
 test('GET /api/health returns ok status', async () => {
   const testDb = createTestDatabase();
 
-  let app;
-  let db;
+  let appDb;
   let server;
 
   try {
-    app = require('../server');
-    db = require('../database/db');
+    const app = require('../server');
+    appDb = require('../database/db');
 
-    server = app.listen(0);
+    const testServer = await startTestServer(app);
 
-    await new Promise((resolve) => {
-      server.once('listening', resolve);
-    });
+    server = testServer.server;
 
-    const address = server.address();
-    const response = await fetch(`http://127.0.0.1:${address.port}/api/health`);
+    const response = await fetch(`${testServer.baseUrl}/api/health`);
     const payload = await response.json();
 
     assert.equal(response.status, 200);
@@ -29,21 +26,10 @@ test('GET /api/health returns ok status', async () => {
     assert.equal(payload.app, 'watchhub');
     assert.equal(payload.database, 'connected');
   } finally {
-    if (server) {
-      await new Promise((resolve, reject) => {
-        server.close((error) => {
-          if (error) {
-            reject(error);
-            return;
-          }
+    await stopTestServer(server);
 
-          resolve();
-        });
-      });
-    }
-
-    if (db) {
-      db.close();
+    if (appDb) {
+      appDb.close();
     }
 
     testDb.cleanup();
