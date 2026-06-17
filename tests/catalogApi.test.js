@@ -74,3 +74,18 @@ test('GET /api/catalog hides titles marked hidden for selected profile', async (
   assert.ok(returnedTitles.includes('Smoke Movie'));
   assert.equal(returnedTitles.includes('Hidden Movie'), false);
 });
+
+test('GET /api/catalog respects profile age rating limit', async () => {
+  const response = await fetch(`${baseUrl}/api/catalog?profile=102`);
+  const payload = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(Array.isArray(payload.data), true);
+
+  const returnedTitles = payload.data.map((title) => title.display_title);
+
+  assert.ok(returnedTitles.includes('Kid Movie'));
+  assert.equal(returnedTitles.includes('Smoke Movie'), false);
+  assert.equal(returnedTitles.includes('Hidden Movie'), false);
+  assert.equal(returnedTitles.includes('Adult Movie'), false);
+});
