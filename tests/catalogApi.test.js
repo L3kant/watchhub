@@ -112,3 +112,38 @@ test('GET /api/catalog respects profile blocked services', async () => {
   assert.equal(kidMovie.services.length, 1);
   assert.equal(kidMovie.services[0].service_name, 'Disney+');
 });
+
+test('GET /api/catalog/new-movies respects profile visibility rules', async () => {
+  const response = await fetch(`${baseUrl}/api/catalog/new-movies?profile=102&limit=20`);
+  const payload = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(Array.isArray(payload.data), true);
+
+  const returnedTitles = payload.data.map((title) => title.display_title);
+
+  assert.ok(returnedTitles.includes('Kid Movie'));
+  assert.equal(returnedTitles.includes('Smoke Movie'), false);
+  assert.equal(returnedTitles.includes('Hidden Movie'), false);
+  assert.equal(returnedTitles.includes('Adult Movie'), false);
+});
+
+test('GET /api/catalog/new-series returns profile-visible series with services', async () => {
+  const response = await fetch(`${baseUrl}/api/catalog/new-series?profile=101&limit=20`);
+  const payload = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(Array.isArray(payload.data), true);
+
+  const smokeSeries = payload.data.find((title) => {
+    return title.display_title === 'Smoke Series';
+  });
+
+  assert.ok(smokeSeries);
+  assert.equal(smokeSeries.media_type, 'tv');
+  assert.equal(smokeSeries.first_air_date, '2024-05-05');
+
+  assert.equal(Array.isArray(smokeSeries.services), true);
+  assert.equal(smokeSeries.services.length, 1);
+  assert.equal(smokeSeries.services[0].service_name, 'Netflix');
+});

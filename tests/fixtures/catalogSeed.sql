@@ -34,7 +34,8 @@ INSERT INTO media_genres (
 )
 VALUES
   (101, 'Drama', 18, 'movie'),
-  (102, 'Family', 10751, 'movie');
+  (102, 'Family', 10751, 'movie'),
+  (103, 'TV Drama', 18, 'tv');
 
 INSERT INTO media_titles (
   title_id,
@@ -116,6 +117,22 @@ VALUES
     120,
     'en',
     'Movie not suitable for kid profile.'
+  ),
+  (
+    1005,
+    1005,
+    'tv',
+    'Smoke Series',
+    'Smoke Series Original',
+    2024,
+    NULL,
+    12,
+    0,
+    '/series.jpg',
+    7.1,
+    NULL,
+    'en',
+    'Minimal series used by API smoke tests.'
   );
 
 INSERT INTO title_services (
@@ -126,7 +143,8 @@ VALUES
   (1001, 101),
   (1002, 101),
   (1003, 102),
-  (1004, 101);
+  (1004, 101),
+  (1005, 101);
 
 INSERT INTO title_genres (
   title_id,
@@ -136,7 +154,12 @@ VALUES
   (1001, 101),
   (1002, 101),
   (1003, 102),
-  (1004, 101);
+  (1004, 101),
+  (1005, 103);
+
+UPDATE media_titles
+SET first_air_date = '2024-05-05'
+WHERE title_id = 1005;
 
 INSERT INTO profile_title_statuses (
   profile_id,
