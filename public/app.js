@@ -25,12 +25,9 @@ const createProfileAge = document.getElementById('createProfileAge');
 const createProfileColor = document.getElementById('createProfileColor');
 const createProfileMessage = document.getElementById('createProfileMessage');
 
-const { getCardDateText, formatAdminNumber, formatAdminDate, formatAdminBoolean, escapeHtml } =
-  window.WatchHubFormatters;
+const { getCardDateText } = window.WatchHubFormatters;
 
 const { PROFILE_STORAGE_KEY } = window.WatchHubConfig;
-
-const { getTypeLabel } = window.WatchHubLabels;
 
 const {
   createCatalogCard,
@@ -40,11 +37,11 @@ const {
   renderTitleDetail,
   renderTitleGrid,
   renderProfileSelect,
-  renderAdminStatusCard,
   renderAdminStatus,
   renderAdminServices,
   renderAdminProfiles,
   renderAdminExternalLinks,
+  renderAdminCatalogQuality,
 } = window.WatchHubRenderers;
 
 const { fetchJson } = window.WatchHubApi;
@@ -167,118 +164,6 @@ function renderCatalog(titles) {
   });
 }
 
-function renderAdminCatalogQuality(data) {
-  const message = document.querySelector('#adminCatalogQualityMessage');
-  const summaryElement = document.querySelector('#adminCatalogQualitySummary');
-  const typeTableBody = document.querySelector('#adminCatalogQualityTypeTableBody');
-  const recentTableBody = document.querySelector('#adminCatalogQualityRecentTableBody');
-
-  if (!message || !summaryElement || !typeTableBody || !recentTableBody) {
-    return;
-  }
-
-  const summary = data && data.summary ? data.summary : {};
-  const byType = Array.isArray(data.by_type) ? data.by_type : [];
-  const recentlyUpdated = Array.isArray(data.recently_updated) ? data.recently_updated : [];
-
-  summaryElement.innerHTML = [
-    renderAdminStatusCard(
-      'Tituly celkem',
-      formatAdminNumber(summary.titles_count),
-      `${formatAdminNumber(summary.movies_count)} filmů, ${formatAdminNumber(summary.series_count)} seriálů`,
-    ),
-    renderAdminStatusCard(
-      'Chybí plakát',
-      formatAdminNumber(summary.missing_poster_count),
-      'poster_path je prázdný',
-    ),
-    renderAdminStatusCard(
-      'Chybí popis',
-      formatAdminNumber(summary.missing_overview_count),
-      'overview_text je prázdný',
-    ),
-    renderAdminStatusCard(
-      'Chybí datum',
-      `${formatAdminNumber(summary.missing_movie_release_date_count)} / ${formatAdminNumber(summary.missing_series_first_air_date_count)}`,
-      'filmy release_date / seriály first_air_date',
-    ),
-    renderAdminStatusCard(
-      'Chybí délka',
-      formatAdminNumber(summary.missing_runtime_count),
-      'runtime_minutes zatím často nebude doplněný',
-    ),
-    renderAdminStatusCard(
-      'Chybí věkový rating',
-      formatAdminNumber(summary.missing_age_rating_count),
-      'age_rating zatím není plně naplněný',
-    ),
-    renderAdminStatusCard(
-      'Bez žánrů',
-      formatAdminNumber(summary.missing_genres_count),
-      'tituly bez vazby v title_genres',
-    ),
-    renderAdminStatusCard(
-      'Bez služby',
-      formatAdminNumber(summary.missing_services_count),
-      'tituly bez vazby v title_services',
-    ),
-  ].join('');
-
-  if (byType.length === 0) {
-    typeTableBody.innerHTML = `
-      <tr>
-        <td colspan="5">Nejsou dostupná žádná data podle typu.</td>
-      </tr>
-    `;
-  } else {
-    typeTableBody.innerHTML = byType
-      .map((item) => {
-        return `
-          <tr>
-            <td>${escapeHtml(getTypeLabel(item.media_type))}</td>
-            <td>${formatAdminNumber(item.titles_count)}</td>
-            <td>${formatAdminNumber(item.missing_poster_count)}</td>
-            <td>${formatAdminNumber(item.missing_overview_count)}</td>
-            <td>${formatAdminNumber(item.missing_runtime_count)}</td>
-          </tr>
-        `;
-      })
-      .join('');
-  }
-
-  if (recentlyUpdated.length === 0) {
-    recentTableBody.innerHTML = `
-      <tr>
-        <td colspan="8">Nejsou dostupné žádné aktualizované tituly.</td>
-      </tr>
-    `;
-  } else {
-    recentTableBody.innerHTML = recentlyUpdated
-      .map((title) => {
-        return `
-          <tr>
-            <td>
-              <strong>${escapeHtml(title.display_title)}</strong>
-              <div class="admin-table-subtext">
-                title_id: ${formatAdminNumber(title.title_id)}
-              </div>
-            </td>
-            <td>${escapeHtml(getTypeLabel(title.media_type))}</td>
-            <td>${formatAdminBoolean(title.has_poster)}</td>
-            <td>${formatAdminBoolean(title.has_overview)}</td>
-            <td>${formatAdminBoolean(title.has_runtime)}</td>
-            <td>${formatAdminBoolean(title.has_language)}</td>
-            <td>${formatAdminBoolean(title.has_rating)}</td>
-            <td>${formatAdminDate(title.updated_at)}</td>
-          </tr>
-        `;
-      })
-      .join('');
-  }
-
-  message.textContent = 'Přehled kvality katalogu načten.';
-}
-
 async function loadAdminCatalogQuality() {
   const message = document.querySelector('#adminCatalogQualityMessage');
   const summaryElement = document.querySelector('#adminCatalogQualitySummary');
@@ -299,7 +184,13 @@ async function loadAdminCatalogQuality() {
       throw new Error(payload.error || 'Nepodařilo se načíst kvalitu katalogu.');
     }
 
-    renderAdminCatalogQuality(payload.data);
+    renderAdminCatalogQuality(
+      message,
+      summaryElement,
+      typeTableBody,
+      recentTableBody,
+      payload.data,
+    );
   } catch (error) {
     console.error('Failed to load admin catalog quality:', error);
 
