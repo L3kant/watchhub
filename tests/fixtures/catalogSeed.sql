@@ -23,7 +23,8 @@ INSERT INTO user_profiles (
 )
 VALUES
   (101, 'Adult Test', 18, '[]', 0, 'default', 'blue', 1),
-  (102, 'Kid Test', 7, '[]', 0, 'default', 'green', 1);
+  (102, 'Kid Test', 7, '[]', 0, 'default', 'green', 1),
+  (103, 'No Netflix Test', 18, '[101]', 0, 'default', 'purple', 1);
 
 INSERT INTO media_genres (
   genre_id,

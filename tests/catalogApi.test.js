@@ -89,3 +89,26 @@ test('GET /api/catalog respects profile age rating limit', async () => {
   assert.equal(returnedTitles.includes('Hidden Movie'), false);
   assert.equal(returnedTitles.includes('Adult Movie'), false);
 });
+
+test('GET /api/catalog respects profile blocked services', async () => {
+  const response = await fetch(`${baseUrl}/api/catalog?profile=103`);
+  const payload = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(Array.isArray(payload.data), true);
+
+  const returnedTitles = payload.data.map((title) => title.display_title);
+
+  assert.equal(returnedTitles.includes('Smoke Movie'), false);
+  assert.equal(returnedTitles.includes('Hidden Movie'), false);
+  assert.ok(returnedTitles.includes('Kid Movie'));
+  assert.equal(returnedTitles.includes('Adult Movie'), false);
+
+  const kidMovie = payload.data.find((title) => {
+    return title.display_title === 'Kid Movie';
+  });
+
+  assert.ok(kidMovie);
+  assert.equal(kidMovie.services.length, 1);
+  assert.equal(kidMovie.services[0].service_name, 'Disney+');
+});
