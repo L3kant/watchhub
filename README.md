@@ -74,6 +74,8 @@ Projekt je vedený postupně po malých vývojových krocích. Historie commitů
 
 - katalogová SQL fixture pro automatizované testy
 
+- hlavní kontrolní příkaz `npm run check` spouští formátování, lint i automatizované testy
+
 ## Co aplikace není
 
 WatchHub není přehrávač streamovaného obsahu.
@@ -280,7 +282,7 @@ http://localhost:3000
 
 ## Kontrola kvality kódu
 
-Formátování a lint kontrola:
+Formátování, lint kontrola a automatizované testy:
 
 ```bash
 npm run check
@@ -294,67 +296,59 @@ npm run fix
 
 ## Automatizované testy
 
-Projekt používá vestavěný Node.js test runner:
+Projekt používá vestavěný Node.js test runner.
+
+Samostatné spuštění testů:
 
 ```bash
 npm test
 ```
 
-Testy jsou zatím zaměřené na základní backend/API smoke scénáře. Cíl není plná test coverage, ale bezpečnostní síť pro další refaktor katalogu, profilů a admin endpointů.
-
-Testy používají izolovanou SQLite databázi mimo běžnou lokální databázi:
-
-```bash
-data/watchhub.sqlite
-```
-
-Testovací databáze se vytváří v dočasné složce a cesta se předává přes proměnnou prostředí:
-
-```bash
-WATCHHUB_DB_PATH=...
-```
-
-Testovací databáze se inicializuje ze souboru:
-
-```bash
-database/schema.sql
-```
-
-Katalogové API testy používají lokální SQL fixture:
-
-```bash
-tests/fixtures/catalogSeed.sql
-```
-
-Aktuálně testy pokrývají zejména:
-
-- základní běh test runneru
-- inicializaci izolované SQLite databáze
-- health endpoint
-- základní katalogový API smoke test
-- skrytí titulů podle profilového statusu hidden
-- filtrování katalogu podle věkového limitu profilu
-- filtrování katalogu podle blokovaných služeb profilu
-
-Automatické testy nesmí volat externí API. Konkrétně netestují:
-
-- TMDb requesty
-- Movie of the Night requesty
-- endpointy vyžadující reálný API klíč nebo internetové připojení
-
-Externí integrace se ověřují ručně přes lokální smoke testy.
-
-Aktuálně platí:
+Hlavní kontrolní příkaz pro vývoj:
 
 ```bash
 npm run check
 ```
 
-spouští pouze formátování a lint kontrolu. Testy se zatím spouští samostatně přes:
+`npm run check` aktuálně spouští:
 
-```bash
-npm test
+1. kontrolu formátování přes Prettier,
+2. lint přes ESLint,
+3. automatizované testy přes `npm test`.
+
+Testy jsou zatím zaměřené na základní backend/API smoke scénáře. Cíl není plná test coverage, ale bezpečnostní síť pro další refaktor katalogu, profilů a admin endpointů.
+
+Testy nepoužívají běžnou lokální databázi `data/watchhub.sqlite`.
+
+Místo toho se pro testovací běh vytvoří dočasná izolovaná SQLite databáze. Cesta k ní se aplikaci předává přes proměnnou prostředí `WATCHHUB_DB_PATH`.
+
+Testovací databáze se skládá ze dvou vrstev:
+
+```text
+database/schema.sql
+tests/fixtures/catalogSeed.sql
 ```
+
+`database/schema.sql` vytvoří databázovou strukturu.  
+`tests/fixtures/catalogSeed.sql` doplní malou sadu mock dat pro katalogové API testy.
+
+Aktuálně testy pokrývají zejména:
+
+- základní běh test runneru,
+- inicializaci izolované SQLite databáze,
+- health endpoint,
+- základní katalogový API smoke test,
+- skrytí titulů podle profilového statusu `hidden`,
+- filtrování katalogu podle věkového limitu profilu,
+- filtrování katalogu podle blokovaných služeb profilu.
+
+Automatické testy nesmí volat externí API. Konkrétně netestují:
+
+- TMDb requesty,
+- Movie of the Night requesty,
+- endpointy vyžadující reálný API klíč nebo internetové připojení.
+
+Externí integrace se ověřují ručně přes lokální smoke testy.
 
 ## Základní smoke test
 
@@ -369,8 +363,7 @@ Po lokálním spuštění ověř:
 - Novinky se načítají
 - Admin přehled se načítá
 - Movie of the Night se nevolá automaticky při otevření detailu
-- `npm run check` projde
-- `npm test` projde
+- `npm run check` projde včetně automatizovaných testů
 
 Podrobný POC checklist je v `docs/POC_CHECKLIST.md`.
 
@@ -447,6 +440,8 @@ Očekávaný stav:
 - ~~refaktorovat backend katalogové routy~~
 - ~~extrahovat frontend helpery~~
 - ~~rozdělit frontend renderery do tematických souborů bez buildu~~
+- ~~přidat základní backend/API smoke testy~~
+- ~~zapojit automatizované testy do `npm run check`~~
 
 ### Aktuální post-POC refaktor
 
@@ -456,6 +451,14 @@ Frontend renderery jsou rozdělené podle odpovědnosti:
 - `detailRenderers.js`
 - `adminRenderers.js`
 - `profileRenderers.js`
+
+Backend má základní safety net pro další cleanup:
+
+- izolovanou testovací SQLite databázi
+- testovací server helper
+- katalogovou SQL fixture
+- základní API smoke testy
+- kontrolu profilové viditelnosti v katalogu
 
 Tento refaktorový milník navazuje na POC stav a připravuje projekt na další backend cleanup bez změny technologického stacku.
 
