@@ -2,33 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const { createTestDatabase } = require('./helpers/testDatabase');
-
-function listen(app) {
-  const server = app.listen(0);
-
-  return new Promise((resolve) => {
-    server.once('listening', () => {
-      resolve(server);
-    });
-  });
-}
-
-function closeServer(server) {
-  if (!server) {
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve, reject) => {
-    server.close((error) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-
-      resolve();
-    });
-  });
-}
+const { startTestServer, stopTestServer } = require('./helpers/testServer');
 
 function seedCatalog(db) {
   const serviceResult = db
@@ -128,10 +102,11 @@ test('GET /api/catalog returns seeded catalog item', async () => {
     app = require('../server');
     appDb = require('../database/db');
 
-    server = await listen(app);
+    const testServer = await startTestServer(app);
 
-    const address = server.address();
-    const response = await fetch(`http://127.0.0.1:${address.port}/api/catalog?limit=5`);
+    server = testServer.server;
+
+    const response = await fetch(`${testServer.baseUrl}/api/catalog?limit=5`);
     const payload = await response.json();
 
     assert.equal(response.status, 200);
@@ -153,7 +128,7 @@ test('GET /api/catalog returns seeded catalog item', async () => {
     assert.equal(title.genres.length, 1);
     assert.equal(title.genres[0].genre_name, 'Drama');
   } finally {
-    await closeServer(server);
+    await stopTestServer(server);
 
     if (appDb) {
       appDb.close();
