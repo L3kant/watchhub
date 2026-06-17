@@ -17,7 +17,7 @@
     "format:check": "prettier --check . --ignore-unknown",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "check": "npm run format:check && npm run lint",
+    "check": "npm run format:check && npm run lint && npm test",
     "fix": "npm run format && npm run lint:fix",
     "test": "node --test"
   },
