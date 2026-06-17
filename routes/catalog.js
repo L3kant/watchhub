@@ -13,45 +13,17 @@ const {
   parseOptionalPositiveInteger,
 } = require('./catalog/queryParams');
 const { getServicesByTitleIds, getGenresByTitleIds } = require('./catalog/associations');
-const { getTmdbWatchUrl, isSafeExternalLink } = require('./catalog/launchers');
+const { getTmdbWatchUrl } = require('./catalog/launchers');
 const { getDetailServicesForTitle } = require('./catalog/detailServices');
 const { buildCatalogWhereClause } = require('./catalog/whereClause');
 const { mapTitleWithServices, mapTitleWithServicesAndGenres } = require('./catalog/mappers');
 const { addNewsTitleProfileVisibilityConditions } = require('./catalog/newsVisibility');
+const {
+  getCountryStreamingOptions,
+  getPreferredStreamingOption,
+} = require('./catalog/movieOfTheNightOptions');
 
 const router = express.Router();
-
-function getCountryStreamingOptions(showData, countryCode = 'cz') {
-  const streamingOptions = showData?.streamingOptions;
-
-  if (!streamingOptions || typeof streamingOptions !== 'object') {
-    return [];
-  }
-
-  const options = streamingOptions[countryCode] || streamingOptions[countryCode.toUpperCase()];
-
-  if (!Array.isArray(options)) {
-    return [];
-  }
-
-  return options;
-}
-
-function getPreferredStreamingOption(options, motnServiceId) {
-  const matchingOptions = options.filter((option) => {
-    return option?.service?.id === motnServiceId && isSafeExternalLink(option.link);
-  });
-
-  if (matchingOptions.length === 0) {
-    return null;
-  }
-
-  const subscriptionOption = matchingOptions.find((option) => {
-    return option.type === 'subscription';
-  });
-
-  return subscriptionOption || matchingOptions[0];
-}
 
 router.get('/genres', (req, res) => {
   try {
