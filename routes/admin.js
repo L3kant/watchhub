@@ -3,8 +3,7 @@ const db = require('../database/db');
 
 const { getLocalQuotaStatus } = require('../clients/movieOfTheNightClient');
 const { getValue, getCount } = require('./admin/dbHelpers');
-const { parseBlockedServices } = require('./admin/profileHelpers');
-const { mapAdminServiceRow } = require('./admin/mappers');
+const { mapAdminServiceRow, mapAdminProfileRow } = require('./admin/mappers');
 
 const router = express.Router();
 
@@ -449,29 +448,7 @@ router.get('/profiles', (req, res) => {
       )
       .all();
 
-    const profiles = rows.map((row) => {
-      const blockedServices = parseBlockedServices(row.blocked_services_json);
-
-      return {
-        profile_id: row.profile_id,
-        profile_name: row.profile_name,
-        max_age_rating: row.max_age_rating,
-        blocked_services: blockedServices,
-        blocked_services_count: blockedServices.length,
-        is_admin: Boolean(row.is_admin),
-        avatar_key: row.avatar_key,
-        color_key: row.color_key,
-        active_flag: Boolean(row.active_flag),
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-
-        statuses_count: Number(row.statuses_count || 0),
-        planned_count: Number(row.planned_count || 0),
-        watching_count: Number(row.watching_count || 0),
-        watched_count: Number(row.watched_count || 0),
-        hidden_count: Number(row.hidden_count || 0),
-      };
-    });
+    const profiles = rows.map(mapAdminProfileRow);
 
     res.json({ data: profiles });
   } catch (error) {
